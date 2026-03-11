@@ -7,61 +7,75 @@
 
 
 #' @title get treatment group
-#' @param ind Mandatory, character or vector \cr
-#'   Studies number
+#' @param studies Optional; character or vector of study IDs. When \code{db_path} is used and NULL, taken from ID table. When \code{xpt_dir} is used and NULL, taken from \code{get_study_ids_from_xpt(xpt_dir)}.
+#' @param db_path Optional when \code{xpt_dir} is set; path to SQLite database
+#' @param xpt_dir Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, \code{appid} per study is required (from \code{get_study_ids_from_xpt}).
 #' @return list
 #'
 #' @examples
 #' \dontrun{
 #' get_treatment_group(studies = '12345678', db_path = 'path/to/sqllite/database.db')
+#' get_treatment_group(studies = NULL, xpt_dir = '/path/to/xpt_root')
 #' }
 #' @export
 
-
-
-get_treatment_group <- function(studies=NULL, db_path) {
+get_treatment_group <- function(studies = NULL, db_path = NULL, xpt_dir = NULL) {
   list_return <- list()
   four <- c()
-  con <- DBI::dbConnect(DBI::dbDriver('SQLite'), dbname = db_path)
-  if (is.null(studies)){
-    query <- 'SELECT * FROM ID'
-    appid <- DBI::dbGetQuery(conn=con, statement = query)
-    studies <- appid[['STUDYID']]
+  use_xpt <- !is.null(xpt_dir)
+  if (use_xpt) {
+    if (is.null(studies)) {
+      id_df <- get_study_ids_from_xpt(xpt_dir)
+      if (nrow(id_df) == 0L) return(list_return)
+      study_list <- id_df
+    } else if (is.data.frame(studies) && all(c("APPID", "STUDYID") %in% names(studies))) {
+      study_list <- studies
+    } else {
+      stop("When xpt_dir is set, pass studies = NULL (use all) or a data frame with APPID and STUDYID columns (e.g. from get_study_ids_from_xpt).")
+    }
   } else {
-    studies <- studies
+    if (is.null(db_path)) stop("db_path is required when xpt_dir is not set.")
+    con <- DBI::dbConnect(RSQLite::SQLite(), dbname = db_path)
+    if (is.null(studies)) {
+      id_df <- DBI::dbGetQuery(conn = con, statement = "SELECT * FROM ID")
+      studies <- id_df[["STUDYID"]]
+      study_list <- data.frame(APPID = id_df[["APPID"]], STUDYID = studies, stringsAsFactors = FALSE)
+    } else {
+      study_list <- data.frame(APPID = NA_character_, STUDYID = studies, stringsAsFactors = FALSE)
+    }
   }
 
-  ## }
-  for (i in 1:length(studies)) {
-    study <- studies[i]
+  for (i in seq_len(nrow(study_list))) {
+    study <- study_list$STUDYID[i]
+    appid_val <- study_list$APPID[i]
     print(study)
-    tx <- DBI::dbGetQuery(conn = con,
-      statement = 'SELECT STUDYID,SETCD,TXPARMCD,TXVAL FROM TX WHERE STUDYID IN (:x)',
-      params=list(x=study))
-    tx <- data.table::as.data.table(tx)
-    ts <- DBI::dbGetQuery(conn=con,
-      statement = "SELECT STUDYID,TSPARMCD,TSVAL FROM TS WHERE STUDYID = (:x)",
-      params = list(x=study))
-    ts <- data.table::as.data.table(ts)
-    ds <- DBI::dbGetQuery(conn=con,
-      statement = "SELECT STUDYID, USUBJID, DSDECOD FROM DS WHERE STUDYID = (:x)",
-      params = list(x=study))
-    ds <- data.table::as.data.table(ds)
-    dm <- DBI::dbGetQuery(conn=con,
-      statement = "SELECT STUDYID, USUBJID, SETCD FROM DM WHERE STUDYID = (:x)",
-      params = list(x=study))
-
-    dm <- data.table::as.data.table(dm)
-    pc <- DBI::dbGetQuery(conn=con,
-      statement = "SELECT STUDYID, USUBJID, POOLID FROM PC WHERE STUDYID = (:x)",
-      params = list(x=study))
-    pc <- data.table::as.data.table(pc)
-
-    pooldef <- DBI::dbGetQuery(conn=con,
-      statement = "SELECT STUDYID, USUBJID, POOLID FROM POOLDEF  WHERE STUDYID = (:x)",
-      params = list(x=study))
-
-    pooldef <- data.table::as.data.table(pooldef)
+    if (use_xpt) {
+      tx <- read_domain_for_study("tx", study, path_db = NULL, xpt_dir = xpt_dir, appid = appid_val)
+      ts <- read_domain_for_study("ts", study, path_db = NULL, xpt_dir = xpt_dir, appid = appid_val)
+      ds <- read_domain_for_study("ds", study, path_db = NULL, xpt_dir = xpt_dir, appid = appid_val)
+      dm <- read_domain_for_study("dm", study, path_db = NULL, xpt_dir = xpt_dir, appid = appid_val)
+      pc <- read_domain_for_study("pc", study, path_db = NULL, xpt_dir = xpt_dir, appid = appid_val)
+      pooldef <- read_domain_for_study("pooldef", study, path_db = NULL, xpt_dir = xpt_dir, appid = appid_val)
+      tx <- data.table::as.data.table(tx)
+      ts <- data.table::as.data.table(ts)
+      ds <- data.table::as.data.table(ds)
+      dm <- data.table::as.data.table(dm)
+      pc <- data.table::as.data.table(pc)
+      pooldef <- data.table::as.data.table(pooldef)
+    } else {
+      tx <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID,SETCD,TXPARMCD,TXVAL FROM TX WHERE STUDYID IN (:x)", params = list(x = study))
+      tx <- data.table::as.data.table(tx)
+      ts <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID,TSPARMCD,TSVAL FROM TS WHERE STUDYID = (:x)", params = list(x = study))
+      ts <- data.table::as.data.table(ts)
+      ds <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID, USUBJID, DSDECOD FROM DS WHERE STUDYID = (:x)", params = list(x = study))
+      ds <- data.table::as.data.table(ds)
+      dm <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID, USUBJID, SETCD FROM DM WHERE STUDYID = (:x)", params = list(x = study))
+      dm <- data.table::as.data.table(dm)
+      pc <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID, USUBJID, POOLID FROM PC WHERE STUDYID = (:x)", params = list(x = study))
+      pc <- data.table::as.data.table(pc)
+      pooldef <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID, USUBJID, POOLID FROM POOLDEF WHERE STUDYID = (:x)", params = list(x = study))
+      pooldef <- data.table::as.data.table(pooldef)
+    }
 
     ## tabl <- c('tx','ts','ds','dm','pc','pooldef')
 

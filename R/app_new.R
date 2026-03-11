@@ -7,24 +7,31 @@
 # Feb-03-2025    Md Yousuf Ali (MdYousuf.Ali@fda.hhs.gov)
 
 #' @title Run sendSummarizer shiny app
-#' @param db_path Optional, character\cr
-#'    file path for database
+#' @param db_path Optional when \code{xpt_dir} is set; file path for SQLite database
+#' @param xpt_dir Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, study list comes from directory scan and data are read from XPT files.
 #'
-#' @return function run the app.
+#' @return Runs the Shiny app.
 #'
 #' @export
 #' @examples
 #' \dontrun{
-#' sendSummarizer_app()
+#' sendSummarizer_app(db_path = 'path/to/database.db')
+#' sendSummarizer_app(xpt_dir = '/path/to/xpt_root')
 #' }
 
-
-sendSummarizer_app <- function(db_path){
-    conn <- DBI::dbConnect(RSQLite::SQLite(), db_path)
-   query <- 'SELECT *  FROM ID'
-    all_ids <- DBI::dbGetQuery(conn = conn, query)
+sendSummarizer_app <- function(db_path = NULL, xpt_dir = NULL) {
+  use_xpt <- !is.null(xpt_dir)
+  if (use_xpt) {
+    conn <- NULL
+    all_ids <- get_study_ids_from_xpt(xpt_dir)
     all_ids <- data.table::setDT(all_ids)
-    dbStudyIDS <- unique(all_ids$APPID)
+  } else {
+    if (is.null(db_path)) stop("Either db_path or xpt_dir must be provided.")
+    conn <- DBI::dbConnect(RSQLite::SQLite(), db_path)
+    all_ids <- DBI::dbGetQuery(conn = conn, "SELECT * FROM ID")
+    all_ids <- data.table::setDT(all_ids)
+  }
+  dbStudyIDS <- unique(all_ids$APPID)
     ## print(all_ids)
 
     ## data.table::setDT(dt)
@@ -109,14 +116,10 @@ server <- function(input, output,session) {
   })
 
 
-  get_studyid <- shiny::eventReactive(input$ind,{
+  get_studyid <- shiny::eventReactive(input$ind, {
     shiny::req(input$ind)
     ind <- input$ind
-    get_title <- get_studyid_title(conn=conn, ind,all_ids)
-    get_title
-
-
-
+    get_studyid_title(conn = conn, ind = ind, all_ids = all_ids, xpt_dir = xpt_dir)
   })
 
   shiny::observeEvent(input$ind,{

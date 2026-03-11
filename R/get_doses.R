@@ -1,53 +1,45 @@
 #' @title filter out tk and recovery animal
 #' @param studyid Mandatory, character \cr
 #'   Studyid number
-#' @param path_db Mandatory, character \cr
-#'   path of database
+#' @param path_db Optional when \code{xpt_dir} is set; path of SQLite database.
+#' @param xpt_dir Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, \code{appid} is required.
+#' @param appid Optional; application ID (folder name under \code{xpt_dir}). Required when \code{xpt_dir} is set.
 #' @return dataframe
 #'
 #' @examples
 #' \dontrun{
 #' get_doses(studyid='1234123', path_db='path/to/database.db')
+#' get_doses(studyid='STUDY1', xpt_dir='/path/to/xpt_root', appid='APP1')
 #' }
 #' @export
 
-get_doses <- function(studyid, path_db, xpt_dir=NULL) {
-
-  if(!is.null(xpt_dir)) {
-bw <- haven::read_xpt(fs::path(xpt_dir,'bw.xpt'))
-dm <- haven::read_xpt(fs::path(xpt_dir,'dm.xpt'))
-ds <- haven::read_xpt(fs::path(xpt_dir,'ds.xpt'))
-ts <- haven::read_xpt(fs::path(xpt_dir,'ts.xpt'))
-tx <- haven::read_xpt(fs::path(xpt_dir,'tx.xpt'))
-pooldef <- haven::read_xpt(fs::path(xpt_dir,'pooldef.xpt'))
-pp <- haven::read_xpt(fs::path(xpt_dir,'pp.xpt'))
-## bw <- haven::read_xpt(fs::path(xpt_dir,'bw.xpt'))
-
-
-  } else {
-
+get_doses <- function(studyid, path_db = NULL, xpt_dir = NULL, appid = NULL) {
   studyid <- as.character(studyid)
-  path <- path_db
-  con <- DBI::dbConnect(DBI::dbDriver('SQLite'), dbname = path)
-# function for domain
-  con_db <- function(domain){
-    domain <- toupper(domain)
-    stat <- paste0('SELECT * FROM ', domain, " WHERE STUDYID = (:x)")
-    domain <- DBI::dbGetQuery(con,
-                              statement = stat,
-                              params=list(x=studyid))
-    domain
-}
-
-#Pull relevant domain data for each domain
-  bw <- con_db('bw')
-  dm <- con_db('dm')
-  ds <- con_db('ds')
-  ts <- con_db('ts')
-  tx <- con_db('tx')
-  pooldef <- con_db('pooldef')
-  pp <- con_db('pp')
-
+  if (!is.null(xpt_dir)) {
+    if (is.null(appid)) stop("appid is required when xpt_dir is set (nested layout: xpt_dir/APPID/STUDYID/*.xpt).")
+    bw <- read_domain_for_study("bw", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    dm <- read_domain_for_study("dm", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    ds <- read_domain_for_study("ds", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    ts <- read_domain_for_study("ts", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    tx <- read_domain_for_study("tx", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    pooldef <- read_domain_for_study("pooldef", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    pp <- read_domain_for_study("pp", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+  } else {
+    if (is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
+    path <- path_db
+    con <- DBI::dbConnect(RSQLite::SQLite(), dbname = path)
+    con_db <- function(domain) {
+      dom <- toupper(domain)
+      stat <- paste0("SELECT * FROM ", dom, " WHERE STUDYID = (:x)")
+      DBI::dbGetQuery(con, statement = stat, params = list(x = studyid))
+    }
+    bw <- con_db("bw")
+    dm <- con_db("dm")
+    ds <- con_db("ds")
+    ts <- con_db("ts")
+    tx <- con_db("tx")
+    pooldef <- con_db("pooldef")
+    pp <- con_db("pp")
   }
 
 

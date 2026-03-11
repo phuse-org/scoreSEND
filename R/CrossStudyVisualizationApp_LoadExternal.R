@@ -22,8 +22,7 @@
 ################################################################################
 
 #' @title Run sendCrossStudy app
-#' @param database_path Optional, character\cr
-#'    file path for database
+#' @param database_path Character; file path for SQLite database (used when DataSourceChoice is Database). When using Local (XPT), select the folder that is the XPT root (nested layout: xpt_dir/APPID/STUDYID/*.xpt).
 #'
 #' @return function run the app.
 #'
@@ -79,9 +78,10 @@ FWDataSummary <- list()
 defaultVal <- 350
 SEX <- 'M'
 
-#Database Load
+#Database Load (used when DataSourceChoice == "Database")
+homePath <- getwd()
 db_path <- database_path
-dbtoken <- sendigR::initEnvironment(dbType = 'sqlite',
+dbtoken <- sendigR::initEnvironment(dbType = "sqlite",
                                     dbPath = db_path,
                                     dbCreate = FALSE)
 
@@ -409,14 +409,18 @@ ui <- dashboardPage (
     plotHeight <- reactiveValues(X=defaultVal)
     numSEX <- reactiveValues(X = 1)
 
-    output$select.folder <- renderUI ({
-      if (input$DataSourceChoice == "Local" && is.list(input$folder) == TRUE){
+    output$select.folder <- renderUI({
+      if (input$DataSourceChoice == "Local" && is.list(input$folder) == TRUE) {
+        xpt_root <- file.path(homePath, paste(unlist(input$folder$path), collapse = .Platform$file.sep))
+        id_df <- get_study_ids_from_xpt(xpt_root)
+        if (nrow(id_df) == 0L) {
+          choices <- character(0)
+        } else {
+          choices <- paste0(id_df$APPID, " | ", id_df$STUDYID)
+        }
         selectInput(inputId = "LocalStudies",
-          label = "Choose Studies",
-          choices = list.dirs(path = paste0(homePath,
-            paste(unlist(input$folder$path),
-              collapse = '/')),
-            full.names = FALSE),
+          label = "Choose Studies (XPT: APPID | STUDYID)",
+          choices = choices,
           multiple = TRUE)
       }
     })
@@ -467,43 +471,57 @@ ui <- dashboardPage (
    observeEvent(input$PLOT,{
       #Remake the plot values based on User Selection
       ####Controllable Variables###############
-     
      dataSource <- input$DataSourceChoice
-       #Convert Concatenated Names back to STUDYIDs
+     if (dataSource == "Local") {
+       xpt_dir <- file.path(homePath, paste(unlist(input$folder$path), collapse = .Platform$file.sep))
+       selected <- input$LocalStudies
+       if (is.null(selected) || length(selected) == 0L) {
+         showNotification("Select at least one study (Local).", type = "error")
+         return()
+       }
+       parts <- strsplit(selected, " \\| ", fixed = FALSE)
+       study_df <- data.frame(APPID = vapply(parts, function(p) p[1L], ""),
+         STUDYID = vapply(parts, function(p) p[2L], ""), stringsAsFactors = FALSE)
+       numstudies <- nrow(study_df)
+       DatabaseStudies <- study_df$STUDYID
+       for (j in seq_len(numstudies)) {
+         Name <- paste0("SENDStudy", as.character(j))
+         sid <- study_df$STUDYID[j]
+         aid <- study_df$APPID[j]
+         bw <- read_domain_for_study("bw", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         dm <- read_domain_for_study("dm", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         ex <- read_domain_for_study("ex", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         fw <- read_domain_for_study("fw", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         lb <- read_domain_for_study("lb", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         mi <- read_domain_for_study("mi", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         om <- read_domain_for_study("om", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         ts <- read_domain_for_study("ts", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         ta <- read_domain_for_study("ta", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         pooldef <- read_domain_for_study("pooldef", sid, path_db = NULL, xpt_dir = xpt_dir, appid = aid)
+         assign(Name, list(bw = bw, dm = dm, ex = ex, fw = fw, pooldef = pooldef,
+           lb = lb, mi = mi, om = om, ts = ts, ta = ta))
+         print(paste0(Name, " = ", selected[j]))
+       }
+     } else {
+       # Database
        DatabaseStudies <- dbStudys$STUDYID[which(dbStudys$CombinedName %in% input$DatabaseStudies)]
-       
-       #Find number of StudyIDs
        numstudies <- length(DatabaseStudies)
-       
-       for (j in 1:numstudies){
-         Name <- paste0('SENDStudy',as.character(j))
-         #Pull relevant domain data for each domain
-         bw <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM BW WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         dm <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM DM WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         ex <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM EX WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         fw <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM FW WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         lb <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM LB WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         mi <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM MI WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         om <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM OM WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         ts <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM TS WHERE STUDYID = (:1)",
-                                     queryParams = DatabaseStudies[j])
-         ta <-sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM TA WHERE STUDYID = (:1)",
-                                    queryParams = DatabaseStudies[j])
-
-         pooldef <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM POOLDEF WHERE STUDYID = (:1)",
-                                          queryParams = DatabaseStudies[j])
-         #Combine into list of assigned name
-         assign(Name, list('bw' = bw, 'dm' = dm,'ex' = ex, 'fw' = fw, 'pooldef'=pooldef,
-                           'lb' = lb, 'mi' = mi, 'om'=om, 'ts'=ts, 'ta'=ta))
+       for (j in seq_len(numstudies)) {
+         Name <- paste0("SENDStudy", as.character(j))
+         bw <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM BW WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         dm <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM DM WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         ex <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM EX WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         fw <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM FW WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         lb <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM LB WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         mi <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM MI WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         om <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM OM WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         ts <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM TS WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         ta <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM TA WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         pooldef <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM POOLDEF WHERE STUDYID = (:1)", queryParams = DatabaseStudies[j])
+         assign(Name, list(bw = bw, dm = dm, ex = ex, fw = fw, pooldef = pooldef, lb = lb, mi = mi, om = om, ts = ts, ta = ta))
          print(paste0(Name, " = ", input$DatabaseStudies[j]))
-       }  
+       }
+     }  
        #Check that SEND studies loaded are repeat-dose and have 4 doses (vehicle to high-dose)
        for (nj in 1:numstudies){
          Name <- paste0('SENDStudy',as.character(nj))

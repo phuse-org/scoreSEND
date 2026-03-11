@@ -1,39 +1,37 @@
 
-get_liver_livertobw_score <- function (studyid, 
-                                       path_db, 
-                                       fake_study = FALSE, 
+get_liver_livertobw_score <- function(studyid,
+                                       path_db = NULL,
+                                       fake_study = FALSE,
                                        master_CompileData = NULL,
-                                       bwzscore_BW = NULL, 
-                                       score_in_list_format = FALSE){
-  
-  # om <- sendigR::genericQuery(dbtoken, queryString = "SELECT * FROM OM WHERE STUDYID = (:1)",
-  #                             queryParams = j)
-  path <- path_db
-  con <- DBI::dbConnect(DBI::dbDriver('SQLite'), dbname = path)
-  
-  con_db <- function(domain){
-    domain <- toupper(domain)
-    stat <- paste0('SELECT * FROM ', domain, " WHERE STUDYID = (:x)")
-    domain <- DBI::dbGetQuery(con,
-                              statement = stat,
-                              params=list(x=studyid))
-    domain
+                                       bwzscore_BW = NULL,
+                                       score_in_list_format = FALSE,
+                                       xpt_dir = NULL,
+                                       appid = NULL) {
+  studyid <- as.character(studyid)
+  use_xpt <- !is.null(xpt_dir)
+  if (use_xpt && is.null(appid)) stop("appid is required when xpt_dir is set (nested layout: xpt_dir/APPID/STUDYID/*.xpt).")
+  if (!use_xpt && is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
+
+  if (!use_xpt) {
+    con <- DBI::dbConnect(RSQLite::SQLite(), dbname = path_db)
+    con_db <- function(domain) {
+      dom <- toupper(domain)
+      stat <- paste0("SELECT * FROM ", dom, " WHERE STUDYID = (:x)")
+      DBI::dbGetQuery(con, statement = stat, params = list(x = studyid))
+    }
   }
-  
-  # Check if bwzscore_BW is NULL
+
   if (is.null(bwzscore_BW)) {
-    # Call the master_CompileData function to generate the data frame
-    bwzscore_BW <-  get_bw_score (studyid, 
-                               path_db, 
-                               fake_study = FALSE, 
-                               master_CompileData = NULL,
-                               score_in_list_format = TRUE)  
-  } 
-  
-  
-  
-  #Pull relevant domain data for each domain
-  om <- con_db('om')
+    bwzscore_BW <- get_bw_score(studyid, path_db = path_db, fake_study = FALSE,
+                                master_CompileData = NULL, score_in_list_format = TRUE,
+                                xpt_dir = xpt_dir, appid = appid)
+  }
+
+  if (use_xpt) {
+    om <- read_domain_for_study("om", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+  } else {
+    om <- con_db("om")
+  }
   
   # Initialize data frames to store the OrganWeights_Liver data
   OrganWeights_Liver <- data.frame(USUBJID = character(0), OMSPEC = character(0), OMSTRESN = numeric(0), OMTEST = character(0))
@@ -42,10 +40,16 @@ get_liver_livertobw_score <- function (studyid,
   StudyData_current_liver <- om
   
   # Pull index of the LIVER data
-  Studyidx_liver <- which(stringr::str_detect(StudyData_current_liver$OMSPEC, "LIVER"))
-  
-  # Pull relevant OM Data for LIVER
-  OMD_liver <- StudyData_current_liver[Studyidx_liver, c("USUBJID", "OMSPEC", "OMSTRESN", "OMTEST")]
+  if (nrow(StudyData_current_liver) == 0L || !"OMSPEC" %in% names(StudyData_current_liver)) {
+    OMD_liver <- data.frame(USUBJID = character(), OMSPEC = character(), OMSTRESN = numeric(), OMTEST = character(), stringsAsFactors = FALSE)
+  } else {
+    Studyidx_liver <- which(stringr::str_detect(StudyData_current_liver$OMSPEC, "LIVER"))
+    if (length(Studyidx_liver) == 0L) {
+      OMD_liver <- data.frame(USUBJID = character(), OMSPEC = character(), OMSTRESN = numeric(), OMTEST = character(), stringsAsFactors = FALSE)
+    } else {
+      OMD_liver <- StudyData_current_liver[Studyidx_liver, c("USUBJID", "OMSPEC", "OMSTRESN", "OMTEST")]
+    }
+  }
   
   # Append to the OrganWeights_Liver  data frame
   OrganWeights_Liver <- rbind(OrganWeights_Liver, OMD_liver)
@@ -67,9 +71,7 @@ get_liver_livertobw_score <- function (studyid,
   #browser()
   # Check if master_CompileData is NULL
   if (is.null(master_CompileData)) {
-    fake_study = fake_study
-    # Call the master_CompileData function to generate the data frame
-    master_CompileData <- get_compile_data(studyid, path_db,fake_study = fake_study)  
+    master_CompileData <- get_compile_data(studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir, appid = appid)
   } 
   
   OrganWeights_Liver_filtered <- OrganWeights_Liver_Weight_Selected_Col %>%

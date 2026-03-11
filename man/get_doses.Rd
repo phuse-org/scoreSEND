@@ -4,23 +4,27 @@
 \alias{get_doses}
 \title{filter out tk and recovery animal}
 \usage{
-get_doses(studyid, path_db, xpt_dir = NULL)
+get_doses(studyid, path_db = NULL, xpt_dir = NULL, appid = NULL)
 }
 \arguments{
 \item{studyid}{Mandatory, character \cr
 Studyid number}
 
-\item{path_db}{Mandatory, character \cr
-path of database}
+\item{path_db}{Optional when \code{xpt_dir} is set; path of SQLite database.}
+
+\item{xpt_dir}{Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, \code{appid} is required.}
+
+\item{appid}{Optional; application ID (folder name under \code{xpt_dir}). Required when \code{xpt_dir} is set.}
 }
 \value{
 dataframe
 }
 \description{
-filter out tk and recovery animal
+filter out tk and recovery animal. Data can be read from a SQLite database or from raw XPT files in a nested directory layout (\code{xpt_dir/APPID/STUDYID/*.xpt}).
 }
 \examples{
 \dontrun{
-get_doses(studyid='1234123', path_db='path/to/database.db')
+get_doses(studyid = '1234123', path_db = 'path/to/database.db')
+get_doses(studyid = 'STUDY1', xpt_dir = '/path/to/xpt_root', appid = 'APP1')
 }
 }

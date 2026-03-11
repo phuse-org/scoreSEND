@@ -4,20 +4,22 @@
 \alias{sendSummarizer_app}
 \title{Run sendSummarizer shiny app}
 \usage{
-sendSummarizer_app(db_path)
+sendSummarizer_app(db_path = NULL, xpt_dir = NULL)
 }
 \arguments{
-\item{db_path}{Optional, character\cr
-file path for database}
+\item{db_path}{Optional when \code{xpt_dir} is set; file path for SQLite database.}
+
+\item{xpt_dir}{Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, study list comes from directory scan and data are read from XPT files.}
 }
 \value{
-function run the app.
+Runs the Shiny app.
 }
 \description{
-Run sendSummarizer shiny app
+Run sendSummarizer shiny app. Provide either \code{db_path} (SQLite) or \code{xpt_dir} (nested XPT directory).
 }
 \examples{
 \dontrun{
-sendSummarizer_app()
+sendSummarizer_app(db_path = 'path/to/database.db')
+sendSummarizer_app(xpt_dir = '/path/to/xpt_root')
 }
 }
