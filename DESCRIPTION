@@ -1,4 +1,4 @@
-Package: sendSummarizer
+Package: scoreSEND
 Title: SEND repeat-dose toxicity scoring
 Version: 0.0.0.9000
 Authors@R: 

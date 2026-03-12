@@ -1,8 +1,8 @@
 # scoreSEND
 R Package implementing best practices for scoring/normalizing SEND data for ingestion by ML models.
 
-# This package was derived from sendSummarizer
-sendSummarizer is an R package that includes functions to calculate toxicity score
+# This package was derived from sendSummarizer.
+scoreSEND is an R package that includes functions to calculate toxicity score
 of a given repeat-dose toxicological study. Data can be read from a **SQLite database** or from **raw XPT files**. For XPT, provide the path to a directory that directly contains the domain files (e.g. `study_folder/bw.xpt`, `dm.xpt`, `lb.xpt`) for one study; all files in that directory are treated as one study.  
 
 - paper
@@ -18,7 +18,7 @@ of a given repeat-dose toxicological study. Data can be read from a **SQLite dat
 ```
 # Install from GitHub
 install.packages("devtools")
-devtools::install_github('phuse-org/send-summarizer')
+devtools::install_github('phuse-org/scoreSEND')
 ```
 
 ### For development
@@ -26,7 +26,7 @@ devtools::install_github('phuse-org/send-summarizer')
 Clone the repo, then load the package:
 
 ```
-setwd('send-summarizer')
+setwd('scoreSEND')
 devtools::load_all(".")
 ```
 
