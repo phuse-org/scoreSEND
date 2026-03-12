@@ -1,5 +1,6 @@
 
 #' @title get MI score for a given study
+#' @description Scores are computed for all subjects (all treatment arms). Study-level MI score is the average of per-subject highest finding scores across all arms.
 #' @param studyid Optional when \code{xpt_dir} is set; required for SQLite. Study identifier.
 #' @param path_db Optional when \code{xpt_dir} is set; path of database
 #' @param fake_study optional, Boolean \cr
@@ -367,14 +368,23 @@ get_mi_score <- function(studyid = NULL,
         ScoredData_for_long[, 7:ncol(ScoredData_for_long), drop = FALSE],
         function(x) as.numeric(as.character(x))
       )
-      mi_wide_per_subject <- ScoredData_for_long
+      num_cols <- ncol(ScoredData_for_long)
       mi_per_subject_endpoint <- ScoredData_for_long %>%
         tidyr::pivot_longer(
-          cols = 7:ncol(ScoredData_for_long),
+          cols = 7:num_cols,
           names_to = "endpoint",
           values_to = "score"
         ) %>%
         dplyr::select(STUDYID, USUBJID, endpoint, score)
+      # highest_score for study-level MI: use full ScoredData (all subjects)
+      if (num_cols == 7) {
+        ScoredData_for_long$highest_score <- ScoredData_for_long[, 7]
+      } else {
+        ScoredData_for_long$highest_score <- matrixStats::rowMaxs(
+          as.matrix(ScoredData_for_long[, 7:num_cols]), na.rm = TRUE
+        )
+      }
+      mi_wide_per_subject <- ScoredData_for_long
 
       # subset the ScoredData
       ScoredData_subset_HD <- ScoredData %>% dplyr::filter (ARMCD == "HD")
@@ -387,48 +397,15 @@ get_mi_score <- function(studyid = NULL,
 
       # @~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if(score_in_list_format == FALSE) {
-      # Calculate the highest score for each row from the 7th to the last column
-
-      # Check the number of columns
-      num_cols_ScoredData_subset_HD <- ncol(ScoredData_subset_HD)
-
-      # If number of columns is 7, assign highest_score as the value of the 7th column
-      if (num_cols_ScoredData_subset_HD == 7) {
-        ScoredData_subset_HD$highest_score <- ScoredData_subset_HD[, 7]
-      } else {
-        # If number of columns is more than 7, get the max value from column 7 to the end
-        #ScoredData_subset_HD$highest_score <- apply(ScoredData_subset_HD[, 7:ncol(ScoredData_subset_HD)], 1, max, na.rm = TRUE)
-        ScoredData_subset_HD$highest_score <- matrixStats::rowMaxs(as.matrix(ScoredData_subset_HD[, 7:ncol(ScoredData_subset_HD)]),
-                                                                   na.rm = TRUE)
-      }
-
-      # Move the highest_score column to be the third column
-      ScoredData_subset_HD <- ScoredData_subset_HD[, c(1:2, ncol(ScoredData_subset_HD), 3:(ncol(ScoredData_subset_HD)-1))]
-
-
-      # averaged zscore per STUDYID for 'MI'..................................................................................
-      
-      # Step 1: Filter for HD
-      #MI_final_score <- ScoredData_subset_HD [ARMCD == "HD"]
-      MI_final_score <- ScoredData_subset_HD %>% dplyr::filter(ARMCD == "HD")
-
-      # Step 2: Convert highest_score to numeric # FACTOR value to numeric......?????????
-      MI_final_score <- MI_final_score %>%  dplyr::mutate(highest_score = as.numeric(highest_score))
-
-      # Step 3: Group by STUDYID
-      MI_final_score <- MI_final_score %>%  dplyr::group_by(STUDYID)
-
-      # Step 4: Average MI_score
-      MI_final_score <- MI_final_score %>%  dplyr::summarise( avg_MI_score = mean(highest_score, na.rm = TRUE),  )
-
-      # Step 5: final column selection
-      MI_final_score <- MI_final_score %>% dplyr::select(STUDYID, avg_MI_score)
-
+      # Study-level MI_final_score from full ScoredData (all subjects)
+      MI_final_score <- ScoredData_for_long %>%
+        dplyr::mutate(highest_score = as.numeric(highest_score)) %>%
+        dplyr::group_by(STUDYID) %>%
+        dplyr::summarise(avg_MI_score = mean(highest_score, na.rm = TRUE)) %>%
+        dplyr::select(STUDYID, avg_MI_score)
 
       MI_df <- MI_final_score %>% dplyr::rename(MI_score = avg_MI_score)
 
-      # Extract the MI_score value for the current STUDYID from MI_df
-      #calculated_MI_value <- MI_df$MI_score[MI_df$STUDYID == unique(mi$STUDYID)]
       calculated_MI_value <- MI_df$MI_score[MI_df$STUDYID == unique(mi$STUDYID)]
 
           } else {

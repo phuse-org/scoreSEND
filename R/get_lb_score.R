@@ -1,6 +1,6 @@
 
 #' @title get LB score for a given study
-#' @description Uses a unified day column for LB: VISITDY, or LBNOMDY, or LBDY (in that order). LBNOMLBL is not required.
+#' @description Uses a unified day column for LB: VISITDY, or LBNOMDY, or LBDY (in that order). LBNOMLBL is not required. Scores are computed for all subjects (all treatment arms). Z-scores use vehicle as the reference (mean and SD from \code{ARMCD == "vehicle"}).
 #' @param studyid Optional when \code{xpt_dir} is set; required for SQLite. Study identifier.
 #' @param path_db Optional when \code{xpt_dir} is set; path of database
 #' @param fake_study optional, Boolean \cr
@@ -155,10 +155,9 @@ get_lb_score <- function(studyid = NULL,
       )%>%
       dplyr::mutate(alt_zscore = abs(alt_zscore))
 
-    # averaged zscore per STUDYID for 'SERUM | ALT'
+    # averaged zscore per STUDYID for 'SERUM | ALT' (all subjects)
     serum_alt_final_zscore <- zscore_serum_alt %>%
-      dplyr::filter(ARMCD == "HD") %>%  # Step 1: Filter for HD
-      dplyr::group_by(STUDYID) %>%  # Step 2: Group by STUDYID
+      dplyr::group_by(STUDYID) %>%
       dplyr::summarise(
         avg_alt_zscore = mean(alt_zscore, na.rm = TRUE),  # Step 3: Average alt_zscore
         LBTESTCD = dplyr::first(LBTESTCD)  # Include LBTESTCD in the summarized data
@@ -185,10 +184,9 @@ get_lb_score <- function(studyid = NULL,
       )%>%
       dplyr::mutate(ast_zscore = abs(ast_zscore))
 
-    # averaged zscore per STUDYID for 'SERUM | AST'
+    # averaged zscore per STUDYID for 'SERUM | AST' (all subjects)
     serum_ast_final_zscore <- zscore_serum_ast %>%
-      dplyr::filter(ARMCD  == "HD") %>%  # Step 1: Filter for HD
-      dplyr::group_by(STUDYID) %>%  # Step 2: Group by STUDYID
+      dplyr::group_by(STUDYID) %>%
       dplyr::summarise(
         avg_ast_zscore = mean(ast_zscore, na.rm = TRUE),  # Step 3: Average alt_zscore
         LBTESTCD = dplyr::first(LBTESTCD)  # Include LBTESTCD in the summarized data
@@ -214,10 +212,9 @@ get_lb_score <- function(studyid = NULL,
       )%>%
       dplyr::mutate(alp_zscore = abs(alp_zscore))
 
-    # averaged zscore per STUDYID for 'SERUM | ALP'
+    # averaged zscore per STUDYID for 'SERUM | ALP' (all subjects)
     serum_alp_final_zscore <- zscore_serum_alp %>%
-      dplyr::filter(ARMCD == "HD") %>%  # Step 1: Filter for HD
-      dplyr::group_by(STUDYID) %>%  # Step 2: Group by STUDYID
+      dplyr::group_by(STUDYID) %>%
       dplyr::summarise(
         avg_alp_zscore = mean(alp_zscore, na.rm = TRUE),  # Step 3: Average alt_zscore
         LBTESTCD = dplyr::first(LBTESTCD)  # Include LBTESTCD in the summarized data
@@ -243,10 +240,9 @@ get_lb_score <- function(studyid = NULL,
       )%>%
       dplyr::mutate(ggt_zscore = abs(ggt_zscore))
 
-    # averaged zscore per STUDYID for 'SERUM | GGT'
+    # averaged zscore per STUDYID for 'SERUM | GGT' (all subjects)
     serum_ggt_final_zscore <- zscore_serum_ggt %>%
-      dplyr::filter(ARMCD == "HD") %>%  # Step 1: Filter for HD
-      dplyr::group_by(STUDYID) %>%  # Step 2: Group by STUDYID
+      dplyr::group_by(STUDYID) %>%
       dplyr::summarise(
         avg_ggt_zscore = mean(ggt_zscore, na.rm = TRUE),  # Step 3: Average alt_zscore
         LBTESTCD = dplyr::first(LBTESTCD)  # Include LBTESTCD in the summarized data
@@ -272,10 +268,9 @@ get_lb_score <- function(studyid = NULL,
       )%>%
       dplyr::mutate(bili_zscore = abs(bili_zscore))
 
-    # averaged zscore per STUDYID for 'SERUM | BILI'
+    # averaged zscore per STUDYID for 'SERUM | BILI' (all subjects)
     serum_bili_final_zscore <- zscore_serum_bili %>%
-      dplyr::filter(ARMCD == "HD") %>%  # Step 1: Filter for HD
-      dplyr::group_by(STUDYID) %>%  # Step 2: Group by STUDYID
+      dplyr::group_by(STUDYID) %>%
       dplyr::summarise(
         avg_bili_zscore = mean(bili_zscore, na.rm = TRUE),  # Step 3: Average alt_zscore
         LBTESTCD = dplyr::first(LBTESTCD)  # Include LBTESTCD in the summarized data
@@ -301,10 +296,9 @@ get_lb_score <- function(studyid = NULL,
       )%>%
       dplyr::mutate(alb_zscore = abs(alb_zscore))
 
-    # averaged zscore per STUDYID for 'SERUM | ALB'
+    # averaged zscore per STUDYID for 'SERUM | ALB' (all subjects)
     serum_alb_final_zscore <- zscore_serum_alb %>%
-      dplyr::filter(ARMCD == "HD") %>%  # Step 1: Filter for HD
-      dplyr::group_by(STUDYID) %>%  # Step 2: Group by STUDYID
+      dplyr::group_by(STUDYID) %>%
       dplyr::summarise(
         avg_alb_zscore = mean(alb_zscore, na.rm = TRUE),  # Step 3: Average alt_zscore
         LBTESTCD = dplyr::first(LBTESTCD)  # Include LBTESTCD in the summarized data

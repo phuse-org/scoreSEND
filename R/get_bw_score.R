@@ -1,6 +1,6 @@
 
 #' @title get BW score for a given study
-#' @description Uses a unified day column for BW: VISITDY, or BWNOMDY, or BWDY (in that order). BWNOMLBL is not required; optional columns are used only if present.
+#' @description Uses a unified day column for BW: VISITDY, or BWNOMDY, or BWDY (in that order). BWNOMLBL is not required; optional columns are used only if present. Scores are computed for all subjects (all treatment arms). Z-scores use vehicle as the reference (mean and SD from \code{ARMCD == "vehicle"}).
 #' @param studyid Optional when \code{xpt_dir} is set; required for SQLite. Study identifier.
 #' @param path_db Optional when \code{xpt_dir} is set; path of database
 #' @param fake_study optional, Boolean \cr
@@ -382,13 +382,6 @@ get_bw_score <- function(studyid = NULL,
       ) %>%
       dplyr::select(-mean_vehicle, -sd_vehicle)  # Optionally remove the mean_vehicle and sd_vehicle columns
     
-    # Filter and select specific columns
-    HD_BWzScore <- bwzscore_BW %>%
-      dplyr::filter(ARMCD == "HD") %>%
-      dplyr::select(STUDYID, USUBJID, SEX, BWZSCORE)
-      
-    as.data.frame(HD_BWzScore)
-
     # Per-subject-per-endpoint long format (all subjects, all arms)
     bw_per_subject_endpoint <- bwzscore_BW %>%
       dplyr::mutate(endpoint = "BW", score = BWZSCORE) %>%
