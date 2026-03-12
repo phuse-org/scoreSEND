@@ -2,21 +2,22 @@
 % Please edit documentation in R/read_domain.R
 \name{get_study_ids_from_xpt}
 \alias{get_study_ids_from_xpt}
-\title{Get study list from nested XPT directory structure}
+\title{List study directories under a parent path (flat XPT layout)}
 \usage{
-get_study_ids_from_xpt(xpt_dir)
+get_study_ids_from_xpt(parent_dir)
 }
 \arguments{
-\item{xpt_dir}{Character; root path of nested layout (\code{xpt_dir/APPID/STUDYID/*.xpt}).}
+\item{parent_dir}{Character; path to a parent directory whose subdirectories are study folders (each containing XPT files).}
 }
 \value{
-Data frame with columns \code{APPID} and \code{STUDYID} (one row per study).
+Data frame with column \code{study_dir} (full path to each study directory).
 }
 \description{
-Scans \code{xpt_dir} for APPID subdirectories, then each APPID for STUDYID subdirectories. Returns a data frame with the same shape as the ID table (APPID, STUDYID).
+Returns immediate subdirectories of \code{parent_dir}; each subdir is assumed to be a study folder containing XPT files (e.g. \code{bw.xpt}, \code{dm.xpt}). Use to iterate over multiple studies when \code{parent_dir} contains one subdir per study.
 }
 \examples{
 \dontrun{
-id_df <- get_study_ids_from_xpt("/path/to/xpt_root")
+id_df <- get_study_ids_from_xpt("/path/to/parent_dir")
+# then: for (i in seq_len(nrow(id_df))) get_all_score(xpt_dir = id_df$study_dir[i])
 }
 }

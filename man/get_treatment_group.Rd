@@ -7,21 +7,21 @@
 get_treatment_group(studies = NULL, db_path = NULL, xpt_dir = NULL)
 }
 \arguments{
-\item{studies}{Optional; character or vector of study IDs, or when \code{xpt_dir} is set a data frame with \code{APPID} and \code{STUDYID} columns (e.g. from \code{get_study_ids_from_xpt}). When \code{db_path} is used and NULL, studies are taken from the ID table. When \code{xpt_dir} is used and NULL, all studies from the directory scan are used.}
+\item{studies}{Optional; for SQLite: character or vector of study IDs, or NULL to use ID table. Ignored when \code{xpt_dir} is set.}
 
 \item{db_path}{Optional when \code{xpt_dir} is set; path to SQLite database.}
 
-\item{xpt_dir}{Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, pass \code{studies = NULL} to use all studies or a data frame with \code{APPID} and \code{STUDYID}.}
+\item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: \code{xpt_dir/tx.xpt}, \code{dm.xpt}, etc.). Processed as a single study.}
 }
 \value{
 list
 }
 \description{
-get treatment group. Supports SQLite (\code{db_path}) or nested XPT (\code{xpt_dir}).
+Get treatment group, recovery group, and TK group. Supports SQLite (\code{db_path}) or a single study directory of XPT files (\code{xpt_dir}).
 }
 \examples{
 \dontrun{
 get_treatment_group(studies = '12345678', db_path = 'path/to/sqllite/database.db')
-get_treatment_group(studies = NULL, xpt_dir = '/path/to/xpt_root')
+get_treatment_group(xpt_dir = '/path/to/study_folder')
 }
 }

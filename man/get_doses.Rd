@@ -4,27 +4,24 @@
 \alias{get_doses}
 \title{filter out tk and recovery animal}
 \usage{
-get_doses(studyid, path_db = NULL, xpt_dir = NULL, appid = NULL)
+get_doses(studyid = NULL, path_db = NULL, xpt_dir = NULL)
 }
 \arguments{
-\item{studyid}{Mandatory, character \cr
-Studyid number}
+\item{studyid}{Optional when \code{xpt_dir} is set; required for SQLite. Study identifier.}
 
 \item{path_db}{Optional when \code{xpt_dir} is set; path of SQLite database.}
 
-\item{xpt_dir}{Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, \code{appid} is required.}
-
-\item{appid}{Optional; application ID (folder name under \code{xpt_dir}). Required when \code{xpt_dir} is set.}
+\item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: \code{xpt_dir/bw.xpt}, \code{dm.xpt}, etc.).}
 }
 \value{
 dataframe
 }
 \description{
-filter out tk and recovery animal. Data can be read from a SQLite database or from raw XPT files in a nested directory layout (\code{xpt_dir/APPID/STUDYID/*.xpt}).
+Filter out TK and recovery animals. Data can be read from a SQLite database or from a directory of XPT files (flat layout: directory contains \code{bw.xpt}, \code{dm.xpt}, etc. for one study).
 }
 \examples{
 \dontrun{
 get_doses(studyid = '1234123', path_db = 'path/to/database.db')
-get_doses(studyid = 'STUDY1', xpt_dir = '/path/to/xpt_root', appid = 'APP1')
+get_doses(xpt_dir = '/path/to/study_folder')
 }
 }

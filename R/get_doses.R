@@ -1,30 +1,28 @@
 #' @title filter out tk and recovery animal
-#' @param studyid Mandatory, character \cr
-#'   Studyid number
+#' @param studyid Optional when \code{xpt_dir} is set; required for SQLite. Study identifier.
 #' @param path_db Optional when \code{xpt_dir} is set; path of SQLite database.
-#' @param xpt_dir Optional; root of nested XPT layout (\code{xpt_dir/APPID/STUDYID/*.xpt}). When set, \code{appid} is required.
-#' @param appid Optional; application ID (folder name under \code{xpt_dir}). Required when \code{xpt_dir} is set.
+#' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/bw.xpt, dm.xpt, etc.).
 #' @return dataframe
 #'
 #' @examples
 #' \dontrun{
 #' get_doses(studyid='1234123', path_db='path/to/database.db')
-#' get_doses(studyid='STUDY1', xpt_dir='/path/to/xpt_root', appid='APP1')
+#' get_doses(xpt_dir='/path/to/study_folder')
 #' }
 #' @export
 
-get_doses <- function(studyid, path_db = NULL, xpt_dir = NULL, appid = NULL) {
-  studyid <- as.character(studyid)
+get_doses <- function(studyid = NULL, path_db = NULL, xpt_dir = NULL) {
   if (!is.null(xpt_dir)) {
-    if (is.null(appid)) stop("appid is required when xpt_dir is set (nested layout: xpt_dir/APPID/STUDYID/*.xpt).")
-    bw <- read_domain_for_study("bw", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
-    dm <- read_domain_for_study("dm", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
-    ds <- read_domain_for_study("ds", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
-    ts <- read_domain_for_study("ts", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
-    tx <- read_domain_for_study("tx", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
-    pooldef <- read_domain_for_study("pooldef", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
-    pp <- read_domain_for_study("pp", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    bw <- read_domain_for_study("bw", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
+    dm <- read_domain_for_study("dm", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
+    ds <- read_domain_for_study("ds", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
+    ts <- read_domain_for_study("ts", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
+    tx <- read_domain_for_study("tx", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
+    pooldef <- read_domain_for_study("pooldef", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
+    pp <- read_domain_for_study("pp", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
   } else {
+    if (is.null(studyid)) stop("studyid is required when xpt_dir is not set (SQLite).")
+    studyid <- as.character(studyid)
     if (is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
     path <- path_db
     con <- DBI::dbConnect(RSQLite::SQLite(), dbname = path)

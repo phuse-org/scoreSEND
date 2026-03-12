@@ -1,18 +1,16 @@
 
-get_liver_livertobw_score <- function(studyid,
+get_liver_livertobw_score <- function(studyid = NULL,
                                        path_db = NULL,
                                        fake_study = FALSE,
                                        master_CompileData = NULL,
                                        bwzscore_BW = NULL,
                                        score_in_list_format = FALSE,
-                                       xpt_dir = NULL,
-                                       appid = NULL) {
-  studyid <- as.character(studyid)
+                                       xpt_dir = NULL) {
   use_xpt <- !is.null(xpt_dir)
-  if (use_xpt && is.null(appid)) stop("appid is required when xpt_dir is set (nested layout: xpt_dir/APPID/STUDYID/*.xpt).")
-  if (!use_xpt && is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
-
   if (!use_xpt) {
+    if (is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
+    if (is.null(studyid)) stop("studyid is required when xpt_dir is not set (SQLite).")
+    studyid <- as.character(studyid)
     con <- DBI::dbConnect(RSQLite::SQLite(), dbname = path_db)
     con_db <- function(domain) {
       dom <- toupper(domain)
@@ -22,13 +20,13 @@ get_liver_livertobw_score <- function(studyid,
   }
 
   if (is.null(bwzscore_BW)) {
-    bwzscore_BW <- get_bw_score(studyid, path_db = path_db, fake_study = FALSE,
+    bwzscore_BW <- get_bw_score(studyid = studyid, path_db = path_db, fake_study = FALSE,
                                 master_CompileData = NULL, score_in_list_format = TRUE,
-                                xpt_dir = xpt_dir, appid = appid)
+                                xpt_dir = xpt_dir)
   }
 
   if (use_xpt) {
-    om <- read_domain_for_study("om", studyid, path_db = path_db, xpt_dir = xpt_dir, appid = appid)
+    om <- read_domain_for_study("om", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
   } else {
     om <- con_db("om")
   }
@@ -71,7 +69,7 @@ get_liver_livertobw_score <- function(studyid,
   #browser()
   # Check if master_CompileData is NULL
   if (is.null(master_CompileData)) {
-    master_CompileData <- get_compile_data(studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir, appid = appid)
+    master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir)
   } 
   
   OrganWeights_Liver_filtered <- OrganWeights_Liver_Weight_Selected_Col %>%

@@ -1,34 +1,36 @@
-# Internal helpers for reading SEND domains from SQLite or nested XPT directories.
+# Internal helpers for reading SEND domains from SQLite or flat XPT directories.
 # read_domain_for_study is not exported; used by get_doses, get_compile_data, etc.
-# get_study_ids_from_xpt is exported for use by apps.
+# get_study_ids_from_xpt is exported to list study directories under a parent.
 
 #' @importFrom haven read_xpt
 #' @importFrom fs path
 NULL
 
-#' Read a single domain for one study from SQLite or XPT (nested layout).
+#' Read a single domain from SQLite or from a directory of XPT files (flat layout).
+#'
+#' When xpt_dir is set, it is the path to a directory that directly contains
+#' domain files (e.g. bw.xpt, dm.xpt). studyid and appid are not used for path construction.
+#' When path_db is set, studyid is required for the SQLite query.
 #'
 #' @param domain Character, lowercase domain name (e.g. "dm", "bw", "lb").
-#' @param studyid Character, study identifier.
+#' @param studyid Character or NULL; required for SQLite (WHERE STUDYID = ?); ignored when xpt_dir is set.
 #' @param path_db Character or NULL; path to SQLite database (used when xpt_dir is NULL).
-#' @param xpt_dir Character or NULL; root of nested XPT layout (xpt_dir/APPID/STUDYID/*.xpt).
-#' @param appid Character or NULL; required when xpt_dir is set (application ID folder name).
+#' @param xpt_dir Character or NULL; path to a directory containing XPT files for one study (flat: xpt_dir/domain.xpt).
 #' @return Data frame with domain data (uppercase column names for XPT).
 #' @noRd
-read_domain_for_study <- function(domain, studyid, path_db = NULL, xpt_dir = NULL, appid = NULL) {
+read_domain_for_study <- function(domain, studyid = NULL, path_db = NULL, xpt_dir = NULL) {
   domain <- tolower(domain)
-  studyid <- as.character(studyid)
   if (!is.null(xpt_dir)) {
-    if (is.null(appid)) stop("appid is required when xpt_dir is set (nested layout: xpt_dir/APPID/STUDYID/*.xpt).")
-    study_dir <- file.path(xpt_dir, appid, studyid)
-    xpt_file <- fs::path(study_dir, paste0(domain, ".xpt"))
+    xpt_file <- fs::path(xpt_dir, paste0(domain, ".xpt"))
     if (!file.exists(as.character(xpt_file))) return(data.frame())
     out <- haven::read_xpt(xpt_file)
     if (nrow(out) == 0L) return(out)
     colnames(out) <- toupper(colnames(out))
     as.data.frame(out, stringsAsFactors = FALSE)
   } else {
-    if (is.null(path_db)) stop("Either path_db or (xpt_dir and appid) must be provided.")
+    if (is.null(path_db)) stop("Either path_db or xpt_dir must be provided.")
+    if (is.null(studyid)) stop("studyid is required when using path_db (SQLite).")
+    studyid <- as.character(studyid)
     con <- DBI::dbConnect(RSQLite::SQLite(), dbname = path_db)
     on.exit(DBI::dbDisconnect(con), add = TRUE)
     dom <- toupper(domain)
@@ -37,25 +39,18 @@ read_domain_for_study <- function(domain, studyid, path_db = NULL, xpt_dir = NUL
   }
 }
 
-#' Get study list from nested XPT directory structure.
+#' List study directories under a parent path (flat XPT layout).
 #'
-#' Scans xpt_dir for APPID subdirectories, then each APPID for STUDYID subdirectories.
-#' Returns a data frame with columns APPID and STUDYID (same shape as ID table).
+#' Returns immediate subdirectories of parent_dir; each subdir is assumed to be
+#' a study folder containing XPT files (e.g. bw.xpt, dm.xpt). Use to iterate over
+#' multiple studies when parent_dir contains one subdir per study.
 #'
-#' @param xpt_dir Character; root path (xpt_dir/APPID/STUDYID/*.xpt).
-#' @return Data frame with columns APPID, STUDYID (one row per study).
+#' @param parent_dir Character; path to a parent directory whose subdirs are study folders.
+#' @return Data frame with column study_dir (full path to each study directory).
 #' @export
-get_study_ids_from_xpt <- function(xpt_dir) {
-  if (!dir.exists(xpt_dir)) return(data.frame(APPID = character(), STUDYID = character(), stringsAsFactors = FALSE))
-  app_dirs <- list.dirs(xpt_dir, full.names = FALSE, recursive = FALSE)
-  app_dirs <- app_dirs[app_dirs != ""]
-  out <- data.frame(APPID = character(), STUDYID = character(), stringsAsFactors = FALSE)
-  for (ad in app_dirs) {
-    study_dirs <- list.dirs(file.path(xpt_dir, ad), full.names = FALSE, recursive = FALSE)
-    study_dirs <- study_dirs[study_dirs != ""]
-    for (sd in study_dirs) {
-      out <- rbind(out, data.frame(APPID = ad, STUDYID = sd, stringsAsFactors = FALSE))
-    }
-  }
-  out
+get_study_ids_from_xpt <- function(parent_dir) {
+  if (!dir.exists(parent_dir)) return(data.frame(study_dir = character(), stringsAsFactors = FALSE))
+  subdirs <- list.dirs(parent_dir, full.names = TRUE, recursive = FALSE)
+  subdirs <- subdirs[subdirs != ""]
+  data.frame(study_dir = subdirs, stringsAsFactors = FALSE)
 }
