@@ -142,10 +142,15 @@ def get_bw_score(
     if "STUDYID" not in merged.columns and "STUDYID" in study_body.columns:
         merged["STUDYID"] = study_body["STUDYID"].iloc[0]
     merged["finalbodyweight"] = (merged["BWSTRESN"] - merged["BWSTRESN_Init"]).abs()
+    merged = merged.reset_index(drop=True)
 
     # Z-score by study: vehicle mean/sd
     def zscore(g):
-        v = g[g["ARMCD"] == "vehicle"]
+        armcd = g["ARMCD"]
+        if isinstance(armcd, pd.DataFrame):
+            armcd = armcd.iloc[:, 0]
+        mask = (armcd == "vehicle").values
+        v = g.loc[mask]
         m = v["finalbodyweight"].mean(skipna=True)
         s = v["finalbodyweight"].std(skipna=True)
         if pd.isna(s) or s == 0:
