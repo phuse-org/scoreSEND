@@ -69,6 +69,41 @@ To list multiple study directories under a parent folder, use `get_study_ids_fro
 The package provides three main scoring functions: **get_bw_score** (body weight), **get_lb_score** (laboratory / clinical chemistry), and **get_mi_score** (microscopic findings). All three use the same data-source options (SQLite or XPT directory), can accept precomputed compile data via `master_CompileData`, and control return shape with `score_in_list_format` (long vs wide).
 
 
+## get_compile_data and compile data
+
+**get_compile_data** builds the subject-level table ("compile data") that the scoring functions use to decide which subjects to score and which arm (ARMCD) each subject belongs to.
+
+### What get_compile_data returns
+
+A data frame with one row per subject and columns **STUDYID**, **USUBJID**, **Species**, **SEX**, **ARMCD**, **SETCD**. Recovery and (when applicable) TK animals are excluded. All treatment arms are included (vehicle, HD, and any intermediate arms). Each subject has a single ARMCD label used by the score functions.
+
+### How get_compile_data works
+
+**fake_study = TRUE (SENDsanitizer-style studies)**
+
+- **Data**: DM and TS only (from SQLite or XPT).
+- **Processing**: Normalize "Control" to "vehicle"; keep all treatment arms in DM (no filter to vehicle/HD). Add Species from TS.
+- **Output**: One row per subject; ARMCD comes from the DM ARM column (all arms present).
+
+**fake_study = FALSE (main path)**
+
+- **Data**: DM, DS, TS, TX, BW, pooldef, PP (from SQLite or XPT).
+- **Steps** (in order):
+  1. **Build CompileData** from DM (STUDYID, Species, USUBJID, SEX, ARMCD, SETCD).
+  2. **Remove recovery animals**: Keep only subjects whose USUBJID appears in DS with DSDECOD in TERMINAL SACRIFICE, MORIBUND SACRIFICE, REMOVED FROM STUDY ALIVE, or NON-MORIBUND SACRIFICE.
+  3. **Remove TK animals** (rat studies only): Exclude USUBJIDs that appear in pooldef for pools listed in PP (TK pools).
+  4. **Dose ranking**: Use TX (TXPARMCD == "TRTDOS") to get one dose value per (STUDYID, SETCD). Per study, compute min and max dose; assign **ARMCD** = "vehicle" (min dose), "HD" (max dose), "Both" (single arm), or "Intermediate" (all other arms). Inner-join this to the cleaned subject list so every remaining subject gets exactly one ARMCD.
+- **Output**: One row per subject (all arms: vehicle, HD, Intermediate, Both); columns STUDYID, USUBJID, Species, SEX, ARMCD, SETCD.
+
+**Arguments**: `studyid` and `path_db` are required when using SQLite; omit them when using `xpt_dir`. `xpt_dir` is the path to a directory containing XPT files for one study (e.g. dm.xpt, ds.xpt). `fake_study`: if TRUE, use the simplified DM+TS path and keep all arms; if FALSE, use the full path with DS/TX/PP/pooldef and dose ranking.
+
+### How the scoring functions use compile data
+
+- **Who gets scored**: Each scoring function restricts to subjects whose USUBJID is in the compile data. Only non-recovery, non-TK subjects with an ARMCD are scored.
+- **ARMCD usage**: **get_bw_score** and **get_lb_score** use ARMCD == "vehicle" to compute mean and SD for z-scores; scores are then computed for all subjects (all arms) in the compile data. **get_mi_score** uses ARMCD (and STUDYID, USUBJID, SETCD, etc.) for merging and for incidence-by-arm logic; scores are produced for all subjects in the compile data.
+- **master_CompileData**: If you call **get_compile_data** once and pass the result as **master_CompileData** into **get_bw_score**, **get_lb_score**, or **get_mi_score**, each score function skips calling get_compile_data again. This avoids recomputing compile data when running multiple score functions for the same study.
+
+
 ## get_bw_score
 
 ### How the BW score is calculated
@@ -139,6 +174,6 @@ The package provides three main scoring functions: **get_bw_score** (body weight
 ## Common arguments and usage
 
 - **Data source**: Use either (`studyid` + `path_db`) for SQLite or `xpt_dir` for a single-study directory of XPT files. Do not mix; when using `xpt_dir`, `studyid` can be omitted for the score functions.
-- **Compile data**: All three functions use compile data (from `get_compile_data`) to restrict to non-TK, non-recovery subjects and to get ARMCD (vehicle / HD / Both or dose labels). If you call `get_compile_data` once and pass the result as `master_CompileData` into each score function, compile data is not recomputed.
+- **Compile data**: All three functions use compile data (from `get_compile_data`) to restrict to non-TK, non-recovery subjects and to get ARMCD (vehicle / HD / Both or dose labels). If you call `get_compile_data` once and pass the result as `master_CompileData` into each score function, compile data is not recomputed. For how compile data is built and how it is used by the score functions, see **get_compile_data and compile data** above.
 - **Reference for z-scores**: BW and LB use ARMCD == "vehicle" for mean and standard deviation; scores are then computed for all subjects (all treatment arms). MI does not use a vehicle z-score; it uses severity and incidence rules.
 - **Return format**: For all three functions, `score_in_list_format` controls whether the return is long (one row per subject per endpoint) or wide (one row per subject, endpoints as columns). The default is long.
