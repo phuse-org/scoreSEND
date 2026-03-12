@@ -199,7 +199,7 @@ get_compile_data <- function(studyid = NULL, path_db = NULL, fake_study = FALSE,
 
 
 
-    #.."vehicle" and "HD animals" selection "for"cleaned_CompileData"
+    # Dose ranking labels all arms (vehicle, HD, Intermediate, Both) for cleaned_CompileData
 
     # tx table  filter by TXPARMCD
   cleaned_CompileData_filtered_tx <- tx %>%
@@ -227,77 +227,13 @@ get_compile_data <- function(studyid = NULL, path_db = NULL, fake_study = FALSE,
            ) %>%
     dplyr::select(-is_split) # Remove the is_split column
 
-    #Adding dose_ranking
+    # One row per (STUDYID, SETCD) with one dose value per arm; all arms kept for join
+    dose_ranking <- clean_tx_expanded %>%
+      dplyr::group_by(STUDYID, SETCD) %>%
+      dplyr::summarise(TXVAL = min(TXVAL, na.rm = TRUE), .groups = "drop")
+    dose_ranking$TXVAL[is.infinite(dose_ranking$TXVAL)] <- NA_real_
 
-    # Initialize an empty data frame for dose_ranking
-    dose_ranking <- data.frame()
-
-    dose_ranking_prob_study <- data.frame()
-
-    if (TRUE) {
-      study_data <- clean_tx_expanded
-
-      # Check if all TXVAL values are NA for the STUDYID
-      if (all(is.na(study_data$TXVAL))) {
-        dose_ranking_prob_study <- rbind(dose_ranking_prob_study, study_data)
-      }
-      # Check if all SETCD values are the same for the STUDYID
-      else if (dplyr::n_distinct(study_data$SETCD) == 1) {
-        dose_ranking_prob_study <- rbind(dose_ranking_prob_study, study_data)
-      } else {
-        # Process for lowest TXVAL
-        lowest_txval <- min(study_data$TXVAL, na.rm = TRUE)
-        lowest_data <- study_data %>%
-          dplyr::filter(TXVAL == lowest_txval) %>%
-          dplyr::arrange(SETCD)
-
-        if (nrow(lowest_data) == 1) {
-          dose_ranking <- rbind(dose_ranking, lowest_data)
-
-        } else {
-          # Select the first old_row if available, else the first new_row
-          selected_lowest <- dplyr::filter(lowest_data,
-                                           row_state == "old_row") %>%
-            dplyr::slice(1)
-          if (nrow(selected_lowest) > 0) {
-            dose_ranking <- rbind(dose_ranking, selected_lowest)
-          } else {
-            selected_lowest <- dplyr::filter(lowest_data,
-                                             row_state == "new_row") %>%
-              dplyr::slice(1)
-            dose_ranking <- rbind(dose_ranking, selected_lowest)
-          }
-        }
-
-        # Process for highest TXVAL
-        highest_txval <- max(study_data$TXVAL, na.rm = TRUE)
-        highest_data <- study_data %>%
-          dplyr::filter(TXVAL == highest_txval) %>%
-          dplyr::arrange(SETCD)
-
-        if (nrow(highest_data) == 1) {
-          dose_ranking <- rbind(dose_ranking, highest_data)
-        }else if (nrow(highest_data) > 1) {
-          selected_highest <- dplyr::filter(highest_data,
-                                            row_state == "old_row") %>%
-            dplyr::slice(1)
-          if (nrow(selected_highest) > 0) {
-            dose_ranking <- rbind(dose_ranking, selected_highest)
-          } else {
-            # If no old_row is found, select the first new_row
-            selected_highest <- dplyr::filter(highest_data,
-                                              row_state == "new_row") %>%
-              dplyr::slice(1)
-            if (nrow(selected_highest) > 0) {
-              dose_ranking <- rbind(dose_ranking, selected_highest)
-
-            }
-          }
-        }
-      }
-    }
-
-    #ADD DOSE_RANKING column in "selected_rows" data frame
+    # Assign vehicle / HD / Intermediate / Both from study-level min/max TXVAL
     DOSE_RANKED_selected_rows <- dose_ranking %>%
       dplyr::group_by(STUDYID) %>%
       dplyr::mutate(
