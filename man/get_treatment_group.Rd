@@ -9,15 +9,15 @@ get_treatment_group(studies = NULL, db_path = NULL, xpt_dir = NULL)
 \arguments{
 \item{studies}{Optional; for SQLite: character or vector of study IDs, or NULL to use ID table. Ignored when \code{xpt_dir} is set.}
 
-\item{db_path}{Optional when \code{xpt_dir} is set; path to SQLite database.}
+\item{db_path}{Optional when \code{xpt_dir} is set; path to SQLite database}
 
-\item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: \code{xpt_dir/tx.xpt}, \code{dm.xpt}, etc.). Processed as a single study.}
+\item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: xpt_dir/tx.xpt, dm.xpt, etc.). Processed as a single study.}
 }
 \value{
 list
 }
 \description{
-Get treatment group, recovery group, and TK group. Supports SQLite (\code{db_path}) or a single study directory of XPT files (\code{xpt_dir}).
+get treatment group
 }
 \examples{
 \dontrun{

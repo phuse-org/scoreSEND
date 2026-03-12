@@ -11,17 +11,17 @@ get_doses(studyid = NULL, path_db = NULL, xpt_dir = NULL)
 
 \item{path_db}{Optional when \code{xpt_dir} is set; path of SQLite database.}
 
-\item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: \code{xpt_dir/bw.xpt}, \code{dm.xpt}, etc.).}
+\item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: xpt_dir/bw.xpt, dm.xpt, etc.).}
 }
 \value{
 dataframe
 }
 \description{
-Filter out TK and recovery animals. Data can be read from a SQLite database or from a directory of XPT files (flat layout: directory contains \code{bw.xpt}, \code{dm.xpt}, etc. for one study).
+filter out tk and recovery animal
 }
 \examples{
 \dontrun{
-get_doses(studyid = '1234123', path_db = 'path/to/database.db')
-get_doses(xpt_dir = '/path/to/study_folder')
+get_doses(studyid='1234123', path_db='path/to/database.db')
+get_doses(xpt_dir='/path/to/study_folder')
 }
 }

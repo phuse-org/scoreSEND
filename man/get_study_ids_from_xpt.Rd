@@ -2,22 +2,18 @@
 % Please edit documentation in R/read_domain.R
 \name{get_study_ids_from_xpt}
 \alias{get_study_ids_from_xpt}
-\title{List study directories under a parent path (flat XPT layout)}
+\title{List study directories under a parent path (flat XPT layout).}
 \usage{
 get_study_ids_from_xpt(parent_dir)
 }
 \arguments{
-\item{parent_dir}{Character; path to a parent directory whose subdirectories are study folders (each containing XPT files).}
+\item{parent_dir}{Character; path to a parent directory whose subdirs are study folders.}
 }
 \value{
-Data frame with column \code{study_dir} (full path to each study directory).
+Data frame with column study_dir (full path to each study directory).
 }
 \description{
-Returns immediate subdirectories of \code{parent_dir}; each subdir is assumed to be a study folder containing XPT files (e.g. \code{bw.xpt}, \code{dm.xpt}). Use to iterate over multiple studies when \code{parent_dir} contains one subdir per study.
-}
-\examples{
-\dontrun{
-id_df <- get_study_ids_from_xpt("/path/to/parent_dir")
-# then: for (i in seq_len(nrow(id_df))) get_all_score(xpt_dir = id_df$study_dir[i])
-}
+Returns immediate subdirectories of parent_dir; each subdir is assumed to be
+a study folder containing XPT files (e.g. bw.xpt, dm.xpt). Use to iterate over
+multiple studies when parent_dir contains one subdir per study.
 }
