@@ -1,179 +1,93 @@
 # scoreSEND
-R Package implementing best practices for scoring/normalizing SEND data for ingestion by ML models.
 
-# This package was derived from sendSummarizer.
-scoreSEND is an R package that includes functions to calculate toxicity score
-of a given repeat-dose toxicological study. Data can be read from a **SQLite database** or from **raw XPT files**. For XPT, provide the path to a directory that directly contains the domain files (e.g. `study_folder/bw.xpt`, `dm.xpt`, `lb.xpt`) for one study; all files in that directory are treated as one study.  
+Python package implementing best practices for scoring/normalizing SEND data for ingestion by ML models.
 
-- paper
-- [paper link](https://academic.oup.com/toxsci/article/200/2/277/7690167?login=true) 
+This package was derived from sendSummarizer. scoreSEND provides functions to calculate toxicity scores for a given repeat-dose toxicological study. Data can be read from a **SQLite database** or from **raw XPT files**. For XPT, provide the path to a directory that directly contains the domain files (e.g. `study_folder/bw.xpt`, `dm.xpt`, `lb.xpt`) for one study; all files in that directory are treated as one study.
 
-- Poster
-- [poster](https://www.lexjansen.com/css-us/2022/POS_PP23.pdf)  
+- Paper: [link](https://academic.oup.com/toxsci/article/200/2/277/7690167?login=true)
+- Poster: [link](https://www.lexjansen.com/css-us/2022/POS_PP23.pdf)
 
+## Installation
 
-
-# Installation
-
-```
-# Install from GitHub
-install.packages("devtools")
-devtools::install_github('phuse-org/scoreSEND')
+```bash
+pip install scoreSEND
 ```
 
-### For development
+Or from source:
 
-Clone the repo, then load the package:
-
-```
-setwd('scoreSEND')
-devtools::load_all(".")
-```
-
-
-# More examples
-
-## Using a SQLite database
-
-```
-path_db <- "C:/directory/send.db"
-studyid <- '112344'
-
-mi_score <- get_mi_score(studyid, path_db)
-lb_score <- get_lb_score(studyid, path_db)
-bw_score <- get_bw_score(studyid, path_db)
-all_score <- get_all_score(studyid, path_db, domain = c('lb', 'bw', 'mi'))
-compile <- get_compile_data(studyid, path_db)
-get_treatment_group(db_path = path_db)
+```bash
+git clone https://github.com/phuse-org/scoreSEND.git
+cd scoreSEND
+pip install -e .
 ```
 
-## Using raw XPT files (flat layout)
+### Dependencies
+
+- pandas, numpy, pyreadstat (for XPT read). See `pyproject.toml`.
+
+## Examples
+
+### Using a SQLite database
+
+```python
+import scoreSEND
+
+path_db = "C:/directory/send.db"
+studyid = "112344"
+
+compile_df = scoreSEND.get_compile_data(studyid=studyid, path_db=path_db)
+bw_score = scoreSEND.get_bw_score(studyid=studyid, path_db=path_db)
+lb_score = scoreSEND.get_lb_score(studyid=studyid, path_db=path_db)
+mi_score = scoreSEND.get_mi_score(studyid=studyid, path_db=path_db)
+all_score = scoreSEND.get_all_score(studyid=studyid, path_db=path_db, domain=["lb", "bw", "mi"])
+scoreSEND.get_doses(studyid=studyid, path_db=path_db)
+scoreSEND.get_treatment_group(db_path=path_db)
+```
+
+### Using raw XPT files (flat layout)
 
 Use a directory that directly contains the XPT domain files for one study (e.g. `bw.xpt`, `dm.xpt`, `lb.xpt` in that folder).
 
+```python
+import scoreSEND
+
+study_dir = "C:/path/to/study_folder"
+
+scoreSEND.get_doses(xpt_dir=study_dir)
+scoreSEND.get_compile_data(xpt_dir=study_dir)
+scoreSEND.get_bw_score(xpt_dir=study_dir)
+scoreSEND.get_all_score(xpt_dir=study_dir, domain=["lb", "bw", "mi"])
+scoreSEND.get_treatment_group(xpt_dir=study_dir)
 ```
-study_dir <- "C:/path/to/study_folder"
 
-get_doses(xpt_dir = study_dir)
-get_compile_data(xpt_dir = study_dir)
-get_bw_score(xpt_dir = study_dir)
-get_all_score(xpt_dir = study_dir, domain = c('lb', 'bw', 'mi'))
-get_treatment_group(xpt_dir = study_dir)
-```
+To list multiple study directories under a parent folder, use `get_study_ids_from_xpt(parent_dir)`; it returns a DataFrame with a `study_dir` column. Loop over those paths and call the scoring functions with `xpt_dir=each_study_dir`.
 
-To list multiple study directories under a parent folder, use `get_study_ids_from_xpt(parent_dir)`; it returns a data frame with a `study_dir` column (full path to each subdirectory). You can then loop over those paths and call the scoring functions with `xpt_dir = each_study_dir`. For details on how each score is calculated and how to use their arguments, see **Scoring functions** below.
+## Scoring functions
 
+The package provides **get_bw_score** (body weight), **get_lb_score** (laboratory / clinical chemistry), and **get_mi_score** (microscopic findings). All three use the same data-source options (SQLite or XPT directory), can accept precomputed compile data via `master_CompileData`, and control return shape with `score_in_list_format` (long vs wide).
 
-# Scoring functions
+### get_compile_data and compile data
 
-The package provides three main scoring functions: **get_bw_score** (body weight), **get_lb_score** (laboratory / clinical chemistry), and **get_mi_score** (microscopic findings). All three use the same data-source options (SQLite or XPT directory), can accept precomputed compile data via `master_CompileData`, and control return shape with `score_in_list_format` (long vs wide).
+**get_compile_data** builds the subject-level table ("compile data") that the scoring functions use: which subjects to score and which arm (ARMCD) each subject belongs to.
 
+- **Returns**: DataFrame with STUDYID, USUBJID, Species, SEX, ARMCD, SETCD. Recovery and (when applicable) TK animals are excluded. All treatment arms are included (vehicle, HD, intermediate). Pass this as `master_CompileData` to score functions to avoid recomputing.
 
-## get_compile_data and compile data
+**fake_study = True**: DM and TS only; "Control" normalized to "vehicle"; all arms kept. **fake_study = False**: Full path with DS, TX, PP, pooldef; recovery and TK removed; dose ranking assigns ARMCD (vehicle / HD / Intermediate / Both).
 
-**get_compile_data** builds the subject-level table ("compile data") that the scoring functions use to decide which subjects to score and which arm (ARMCD) each subject belongs to.
+### get_bw_score
 
-### What get_compile_data returns
+Body weight z-score: initial and final weight per subject; z-score using vehicle mean/SD; scores for all subjects. Returns long (STUDYID, USUBJID, endpoint, score, SEX) or wide when `score_in_list_format=True`.
 
-A data frame with one row per subject and columns **STUDYID**, **USUBJID**, **Species**, **SEX**, **ARMCD**, **SETCD**. Recovery and (when applicable) TK animals are excluded. All treatment arms are included (vehicle, HD, and any intermediate arms). Each subject has a single ARMCD label used by the score functions.
+### get_lb_score
 
-### How get_compile_data works
+Liver lab z-scores (ALT, AST, ALP, GGT, BILI, ALB); vehicle mean/SD; all subjects. Returns long (per subject per test) or wide (one row per subject, columns alt_zscore, ast_zscore, etc.) when `score_in_list_format=True`.
 
-**fake_study = TRUE (SENDsanitizer-style studies)**
+### get_mi_score
 
-- **Data**: DM and TS only (from SQLite or XPT).
-- **Processing**: Normalize "Control" to "vehicle"; keep all treatment arms in DM (no filter to vehicle/HD). Add Species from TS.
-- **Output**: One row per subject; ARMCD comes from the DM ARM column (all arms present).
+Liver microscopic findings: severity normalized 0–5; per-subject highest_score; study-level mean over all subjects. Returns long (per subject per finding) or wide when `score_in_list_format=True`.
 
-**fake_study = FALSE (main path)**
+### Common arguments
 
-- **Data**: DM, DS, TS, TX, BW, pooldef, PP (from SQLite or XPT).
-- **Steps** (in order):
-  1. **Build CompileData** from DM (STUDYID, Species, USUBJID, SEX, ARMCD, SETCD).
-  2. **Remove recovery animals**: Keep only subjects whose USUBJID appears in DS with DSDECOD in TERMINAL SACRIFICE, MORIBUND SACRIFICE, REMOVED FROM STUDY ALIVE, or NON-MORIBUND SACRIFICE.
-  3. **Remove TK animals** (rat studies only): Exclude USUBJIDs that appear in pooldef for pools listed in PP (TK pools).
-  4. **Dose ranking**: Use TX (TXPARMCD == "TRTDOS") to get one dose value per (STUDYID, SETCD). Per study, compute min and max dose; assign **ARMCD** = "vehicle" (min dose), "HD" (max dose), "Both" (single arm), or "Intermediate" (all other arms). Inner-join this to the cleaned subject list so every remaining subject gets exactly one ARMCD.
-- **Output**: One row per subject (all arms: vehicle, HD, Intermediate, Both); columns STUDYID, USUBJID, Species, SEX, ARMCD, SETCD.
-
-**Arguments**: `studyid` and `path_db` are required when using SQLite; omit them when using `xpt_dir`. `xpt_dir` is the path to a directory containing XPT files for one study (e.g. dm.xpt, ds.xpt). `fake_study`: if TRUE, use the simplified DM+TS path and keep all arms; if FALSE, use the full path with DS/TX/PP/pooldef and dose ranking.
-
-### How the scoring functions use compile data
-
-- **Who gets scored**: Each scoring function restricts to subjects whose USUBJID is in the compile data. Only non-recovery, non-TK subjects with an ARMCD are scored.
-- **ARMCD usage**: **get_bw_score** and **get_lb_score** use ARMCD == "vehicle" to compute mean and SD for z-scores; scores are then computed for all subjects (all arms) in the compile data. **get_mi_score** uses ARMCD (and STUDYID, USUBJID, SETCD, etc.) for merging and for incidence-by-arm logic; scores are produced for all subjects in the compile data.
-- **master_CompileData**: If you call **get_compile_data** once and pass the result as **master_CompileData** into **get_bw_score**, **get_lb_score**, or **get_mi_score**, each score function skips calling get_compile_data again. This avoids recomputing compile data when running multiple score functions for the same study.
-
-
-## get_bw_score
-
-### How the BW score is calculated
-
-- **Data**: BW domain is read; the day column is unified as VISITDY, else BWNOMDY, else BWDY. Only subjects present in compile data (TK and recovery animals removed) are scored.
-- **Initial weight** (per subject): The first record with VISITDY == 1; if none, the record with VISITDY &lt; 0 closest to zero; if none, the single record in 1 &lt; VISITDY ≤ 5 with minimum VISITDY; if the only records are VISITDY &gt; 5, initial weight is set to 0.
-- **Final weight** (per subject): The record with BWTESTCD == "TERMBW" if present; otherwise, among records with VISITDY &gt; 5, the row with maximum VISITDY.
-- **Metric**: `finalbodyweight = |BWSTRESN - BWSTRESN_Init|`.
-- **Z-score**: Within each STUDYID, mean and standard deviation are computed from subjects with ARMCD == "vehicle". For all subjects (all treatment arms), `BWZSCORE = (finalbodyweight - mean_vehicle) / sd_vehicle`. Vehicle is used only as the reference; scores are produced for every subject.
-- **Output**: One score per subject (endpoint is "BW"). No study-level summary table is returned.
-
-### Arguments and return value
-
-| Argument | Description |
-|----------|-------------|
-| `studyid` | Study identifier. Required when using SQLite; optional when `xpt_dir` is set. |
-| `path_db` | Path to the SQLite database. Required for SQLite; omit when using `xpt_dir`. |
-| `xpt_dir` | Path to a directory containing XPT files for one study (e.g. `bw.xpt`, `dm.xpt`). When set, `studyid` and `path_db` are not needed for reading data. |
-| `fake_study` | If TRUE, compile data is built for SENDsanitizer-style studies (all arms kept). Default FALSE. |
-| `master_CompileData` | Optional precomputed compile data frame. If provided, compile data is not recomputed (saves time when calling multiple score functions). |
-| `score_in_list_format` | If FALSE (default), returns a long-format data frame with columns STUDYID, USUBJID, endpoint, score, SEX. If TRUE, returns the full wide table (e.g. BWZSCORE, finalbodyweight, etc.). |
-
-
-## get_lb_score
-
-### How the LB score is calculated
-
-- **Data**: LB domain; day column is unified as VISITDY, else LBNOMDY, else LBDY. Only records with VISITDY ≥ 1 are used. LBSPEC and LBTESTCD are combined (e.g. "SERUM | ALT"). Only liver-related tests are kept: SERUM, PLASMA, or WHOLE BLOOD for ALT, AST, ALP, GGT, BILI, and ALB. Subjects are restricted to compile data (TK and recovery removed).
-- **Per-subject, per-test**: For each of the six tests, one value per subject is taken: the record with maximum VISITDY per (USUBJID, LBTESTCD).
-- **Z-score**: Within each STUDYID, for each test, mean and standard deviation are computed from subjects with ARMCD == "vehicle". For all subjects, `*_zscore = (LBSTRESN - mean_vehicle_*) / sd_vehicle_*`, then the absolute value is taken.
-- **Study-level**: For each test, the average of that test's z-scores over all subjects in the study is computed; then the average is capped to 0–3: if avg ≥ 3 then 3, else if ≥ 2 then 2, else if ≥ 1 then 1, else 0. Study-level averages use all subjects (all arms), not only high dose.
-- **Output**: The function returns per-subject data: either long (one row per subject per test) or wide (one row per subject with columns alt_zscore, ast_zscore, alp_zscore, ggt_zscore, bili_zscore, alb_zscore). Study-level scores are used internally but the primary return is per-subject.
-
-### Arguments and return value
-
-| Argument | Description |
-|----------|-------------|
-| `studyid` | Study identifier. Required for SQLite; optional when `xpt_dir` is set. |
-| `path_db` | Path to the SQLite database. Required for SQLite; omit when using `xpt_dir`. |
-| `xpt_dir` | Path to a directory containing XPT files for one study (e.g. `lb.xpt`, `dm.xpt`). |
-| `fake_study` | If TRUE, compile data for SENDsanitizer-style studies. Default FALSE. |
-| `master_CompileData` | Optional precomputed compile data; avoids recomputing when calling multiple score functions. |
-| `score_in_list_format` | If FALSE (default), returns long format (STUDYID, USUBJID, endpoint, score). If TRUE, returns wide format (STUDYID, USUBJID, ARMCD, alt_zscore, ast_zscore, alp_zscore, ggt_zscore, bili_zscore, alb_zscore). |
-
-
-## get_mi_score
-
-### How the MI score is calculated
-
-- **Data**: MI domain; only records with MISPEC containing "LIVER" (case-insensitive) are used. MISEV is normalized to a 0–5 numeric scale (e.g. MINIMAL→1, MILD→2, MODERATE→3, MARKED→4, SEVERE→5; "n OF 4" and "n OF 5" mapped accordingly). Some MISTRESC values are merged (e.g. "CELL DEBRIS" → "CELLULAR DEBRIS", infiltration variants → "Infiltrate"). Subjects are restricted to compile data.
-- **Per-subject, per-finding**: A wide table is built: first six columns are STUDYID, USUBJID, ARMCD, etc.; columns 7 onward are one per finding. Raw severity is transformed: 5→5, &gt;3→3, 3→2, &gt;0→1, else 0. Then an **incidence override** is applied: by study, sex, and arm, incidence (proportion of subjects with that finding) is computed; if incidence ≥ 75% the score is set to 5, ≥ 50% to 3, ≥ 25% to 2, ≥ 10% to 1. If a subject's severity for that finding is less than this incidence-derived value, it is raised to that value.
-- **Per-subject summary**: `highest_score` is the row-wise maximum of the finding columns (columns 7 to end).
-- **Study-level**: The study-level MI score is the mean of `highest_score` over all subjects in the study (all arms).
-- **Output**: Long (one row per subject per finding: STUDYID, USUBJID, endpoint, score) or wide (one row per subject, first 6 columns plus one column per MISTRESC with severity score). The study-level value is used internally; the returned data are per-subject.
-
-### Arguments and return value
-
-| Argument | Description |
-|----------|-------------|
-| `studyid` | Study identifier. Required for SQLite; optional when `xpt_dir` is set. |
-| `path_db` | Path to the SQLite database. Required for SQLite; omit when using `xpt_dir`. |
-| `xpt_dir` | Path to a directory containing XPT files for one study (e.g. `mi.xpt`, `dm.xpt`). |
-| `fake_study` | If TRUE, compile data for SENDsanitizer-style studies. Default FALSE. |
-| `master_CompileData` | Optional precomputed compile data; avoids recomputing when calling multiple score functions. |
-| `score_in_list_format` | If FALSE (default), returns long format (STUDYID, USUBJID, endpoint, score). If TRUE, returns wide format (first 6 columns plus one column per finding). |
-
-
-## Common arguments and usage
-
-- **Data source**: Use either (`studyid` + `path_db`) for SQLite or `xpt_dir` for a single-study directory of XPT files. Do not mix; when using `xpt_dir`, `studyid` can be omitted for the score functions.
-- **Compile data**: All three functions use compile data (from `get_compile_data`) to restrict to non-TK, non-recovery subjects and to get ARMCD (vehicle / HD / Both or dose labels). If you call `get_compile_data` once and pass the result as `master_CompileData` into each score function, compile data is not recomputed. For how compile data is built and how it is used by the score functions, see **get_compile_data and compile data** above.
-- **Reference for z-scores**: BW and LB use ARMCD == "vehicle" for mean and standard deviation; scores are then computed for all subjects (all treatment arms). MI does not use a vehicle z-score; it uses severity and incidence rules.
-- **Return format**: For all three functions, `score_in_list_format` controls whether the return is long (one row per subject per endpoint) or wide (one row per subject, endpoints as columns). The default is long.
+- **Data source**: Use either `studyid` + `path_db` (SQLite) or `xpt_dir` (single-study XPT directory).
+- **master_CompileData**: Optional DataFrame from `get_compile_data`; if provided, compile data is not recomputed.
+- **score_in_list_format**: If False (default), return long format; if True, return wide format.

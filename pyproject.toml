@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scoreSEND"
+version = "0.0.0.9000"
+description = "Scoring and data-access functions for SEND repeat-dose toxicological studies. Supports SQLite and raw XPT."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+dependencies = [
+    "pandas>=1.3",
+    "numpy>=1.20",
+    "pyreadstat>=1.2",
+]
+
+[project.optional-dependencies]
+viz = ["matplotlib", "seaborn"]
+dev = ["pytest", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
