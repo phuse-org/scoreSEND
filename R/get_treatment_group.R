@@ -75,7 +75,7 @@ get_treatment_group <- function(studies = NULL, db_path = NULL, xpt_dir = NULL) 
 
     number_of_setcd <- unique(dm[['SETCD']])
     print(number_of_setcd)
-    st_species <- ts[TSPARMCD=='SPECIES'][, TSVAL]
+    st_species <- ts[ts$TSPARMCD == "SPECIES", "TSVAL"]
 
     list_return[[study]][['species']] <- st_species
 
@@ -95,10 +95,10 @@ if(length(st_species)!= 0) {
       ## tkdesc_in_parmcd
       if(tkdesc_in_parmcd) {
 
-        unq_tkdesc <- unique(tx[TXPARMCD=='TKDESC',TXVAL])
+        unq_tkdesc <- unique(tx[tx$TXPARMCD == "TKDESC", "TXVAL"])
         if (length(unq_tkdesc) > 0) {
           if('TK' %in% unq_tkdesc) {
-            tk_group <- unique(tx[TXPARMCD=='TKDESC' & TXVAL=='TK',  SETCD])
+            tk_group <- unique(tx[tx$TXPARMCD == "TKDESC" & tx$TXVAL == "TK", "SETCD"])
             ## print('tkin parmcd')
             ## print(tk)
           }
@@ -110,7 +110,7 @@ if(length(st_species)!= 0) {
         tk_group <- c()
         for(i in 1:length(number_of_setcd)){
           set_cd  <- number_of_setcd[i]
-          subjid <- unique(dm[SETCD==set_cd, USUBJID])
+          subjid <- unique(dm[dm$SETCD == set_cd, "USUBJID"])
 
           if(pc$USUBJID[1]!='') {
             uniq_pc_subj <- unique(pc$USUBJID)
@@ -118,7 +118,7 @@ if(length(st_species)!= 0) {
           } else {
             uniq_pool <- unique(pc$POOLID)
             ## pooldef <- df_domain$pooldef
-            pool_sub <- pooldef[POOLID %in% uniq_pool, USUBJID]
+            pool_sub <- pooldef[pooldef$POOLID %in% uniq_pool, "USUBJID"]
             pc_sub <- 'empty'
           }
 
@@ -142,8 +142,8 @@ if(length(st_species)!= 0) {
       if(length(not_tk) > 0) {
         for (i in 1:length(not_tk)){
           set_cd <- not_tk[i]
-          subjid <- unique(dm[SETCD==set_cd, USUBJID])
-          dsdecod <- tolower(unique(ds[USUBJID %in% subjid, DSDECOD]))
+          subjid <- unique(dm[dm$SETCD == set_cd, "USUBJID"])
+          dsdecod <- tolower(unique(ds[ds$USUBJID %in% subjid, "DSDECOD"]))
           if(tolower("RECOVERY SACRIFICE") %in% dsdecod) {
             recv_group <- c(recv_group, set_cd)
           } else if (tolower("TERMINAL SACRIFICE") %in% dsdecod){
@@ -157,8 +157,8 @@ if(length(st_species)!= 0) {
       not_tk <- number_of_setcd
       for (i in 1:length(not_tk)){
         set_cd <- not_tk[i]
-        subjid <- unique(dm[SETCD==set_cd, USUBJID])
-        dsdecod <- tolower(unique(ds[USUBJID %in% subjid, DSDECOD]))
+        subjid <- unique(dm[dm$SETCD == set_cd, "USUBJID"])
+        dsdecod <- tolower(unique(ds[ds$USUBJID %in% subjid, "DSDECOD"]))
         if(tolower("RECOVERY SACRIFICE") %in% dsdecod) {
           ## print(paste0(set_cd, ' : in recovery'))
           recv_group <- c(recv_group, set_cd)
