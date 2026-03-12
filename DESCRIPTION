@@ -1,0 +1,29 @@
+Package: sendSummarizer
+Title: SEND repeat-dose toxicity scoring
+Version: 0.0.0.9000
+Authors@R: 
+    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Scoring and data-access functions for SEND repeat-dose toxicological studies. Supports SQLite and raw XPT (nested directory layout). Includes visualization helpers and data-loading utilities.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: 
+    cowplot,
+    dplyr,
+    fs,
+    haven,
+    fmsb,
+    ggplot2,
+    gridExtra,
+    Hmisc,
+    httr,
+    magrittr,
+    reshape2,
+    stringr,
+    tidyr,
+    tools
+Depends: 
+    R (>= 3.5)
