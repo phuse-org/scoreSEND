@@ -8,7 +8,7 @@
 #' @param master_CompileData optional; precomputed compile data
 #' @param score_in_list_format optional; if \code{FALSE} (default), returns a long-format data frame with one score per subject per endpoint; if \code{TRUE}, returns a per-subject wide data frame (one row per subject, one column per test z-score), similar to \code{get_bw_score}.
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/lb.xpt, etc.).
-#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{endpoint}, \code{score}, and \code{SEX} (one row per subject per liver test, e.g. SERUM | ALT), consistent with \code{get_bw_score}. When \code{TRUE}, a per-subject wide data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{alt_zscore}, \code{ast_zscore}, \code{alp_zscore}, \code{ggt_zscore}, \code{bili_zscore}, \code{alb_zscore}.
+#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{endpoint}, \code{score}, and \code{SEX} (one row per subject per liver test, e.g. SERUM | ALT). When \code{TRUE}, a per-subject wide data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{alt_zscore}, \code{ast_zscore}, \code{alp_zscore}, \code{ggt_zscore}, \code{bili_zscore}, \code{alb_zscore}.
 #'
 #' @examples
 #' \dontrun{
@@ -130,7 +130,7 @@ get_lb_score <- function(studyid = NULL,
     # Perform a left join to match USUBJID and get ARMCD ## 020924
     #-inner_join() used instead of left_join()#199
     LB_tk_recovery_filtered_ARMCD <- LB_tk_recovery_filtered %>%
-      dplyr::inner_join(master_CompileData %>% dplyr::select(USUBJID, ARMCD, SEX), by = "USUBJID")
+      dplyr::inner_join(master_CompileData %>% dplyr::select(USUBJID, ARMCD, SETCD, SEX), by = "USUBJID")
 
 
     #::::::::::::::::::::::::::::: "zScore Calculation" for LB data::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -365,12 +365,12 @@ score_final <- LB_all_liver_zscore_averaged$avg_all_LB_zscores
     
 # Per-subject-per-endpoint long format (all subjects, all arms)
 lb_per_subject_endpoint <- dplyr::bind_rows(
-  zscore_serum_alt %>% dplyr::select(STUDYID, USUBJID, endpoint = LBTESTCD, score = alt_zscore, SEX),
-  zscore_serum_ast %>% dplyr::select(STUDYID, USUBJID, endpoint = LBTESTCD, score = ast_zscore, SEX),
-  zscore_serum_alp %>% dplyr::select(STUDYID, USUBJID, endpoint = LBTESTCD, score = alp_zscore, SEX),
-  zscore_serum_ggt %>% dplyr::select(STUDYID, USUBJID, endpoint = LBTESTCD, score = ggt_zscore, SEX),
-  zscore_serum_bili %>% dplyr::select(STUDYID, USUBJID, endpoint = LBTESTCD, score = bili_zscore, SEX),
-  zscore_serum_alb %>% dplyr::select(STUDYID, USUBJID, endpoint = LBTESTCD, score = alb_zscore, SEX)
+  zscore_serum_alt %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = alt_zscore, SEX),
+  zscore_serum_ast %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = ast_zscore, SEX),
+  zscore_serum_alp %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = alp_zscore, SEX),
+  zscore_serum_ggt %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = ggt_zscore, SEX),
+  zscore_serum_bili %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = bili_zscore, SEX),
+  zscore_serum_alb %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = alb_zscore, SEX)
 )
 
 # Per-subject wide format (one row per subject, one column per test z-score; for score_in_list_format == TRUE)
@@ -380,7 +380,7 @@ all_usubjids_lb <- unique(c(
 ))
 lb_wide_per_subject <- master_CompileData %>%
   dplyr::filter(USUBJID %in% all_usubjids_lb) %>%
-  dplyr::select(STUDYID, USUBJID, ARMCD) %>%
+  dplyr::select(STUDYID, USUBJID, ARMCD, SETCD) %>%
   dplyr::distinct(STUDYID, USUBJID, .keep_all = TRUE) %>%
   dplyr::left_join(
     zscore_serum_alt %>% dplyr::group_by(STUDYID, USUBJID) %>% dplyr::slice(1L) %>% dplyr::ungroup() %>% dplyr::select(STUDYID, USUBJID, alt_zscore),
