@@ -29,6 +29,45 @@ dose_tier_label_from_index <- function(i, n) {
   stop("Invalid dose tier index: i=", i, ", n=", n, call. = FALSE)
 }
 
+#' Numeric order for sorting rows by dose tier (vehicle, LD, MD, MD#, HD)
+#'
+#' Aligns with \code{dose_tier_label_from_index}. Unknown labels get rank 500;
+#' \code{NA} sorts last (\code{Inf}).
+#'
+#' @param armcd Character vector of \code{ARMCD} values.
+#' @return Numeric vector of the same length (larger = higher dose for known tiers).
+#' @noRd
+armcd_sort_key <- function(armcd) {
+  if (length(armcd) == 0L) {
+    return(numeric())
+  }
+  vapply(armcd, function(a) {
+    if (length(a) != 1L || is.na(a)) {
+      return(Inf)
+    }
+    a <- as.character(a)
+    if (a == "vehicle") {
+      return(1)
+    }
+    if (a == "Both") {
+      return(1.5)
+    }
+    if (a == "LD") {
+      return(2)
+    }
+    if (a == "MD") {
+      return(3)
+    }
+    if (a == "HD") {
+      return(1000)
+    }
+    if (grepl("^MD[0-9]+$", a)) {
+      return(3 + as.numeric(sub("^MD", "", a)))
+    }
+    500
+  }, numeric(1), USE.NAMES = FALSE)
+}
+
 #' Add DOSE_RANKING column from per-arm TXVAL
 #'
 #' One row per \code{(STUDYID, SETCD)} with numeric \code{TXVAL}. Rows with

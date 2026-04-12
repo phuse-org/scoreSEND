@@ -8,7 +8,7 @@
 #' @param master_CompileData optional; precomputed compile data
 #' @param score_in_list_format optional; if \code{FALSE} (default), returns a long-format data frame with one score per subject per endpoint; if \code{TRUE}, returns the full wide data frame (e.g. \code{bwzscore_BW}) as before.
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/bw.xpt, dm.xpt, etc.).
-#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{endpoint}, \code{score}, and \code{SEX} (one row per subject; endpoint is \dQuote{BW}). When \code{TRUE}, the full wide per-subject data frame from compile data and BW: \code{USUBJID}, \code{STUDYID}, \code{BWSTRESN}, \code{BWSTRESN_Init}, \code{ARMCD}, \code{SETCD}, \code{SEX}, \code{finalbodyweight}, and \code{BWZSCORE}.
+#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{endpoint}, \code{score}, and \code{SEX} (one row per subject; endpoint is \dQuote{BW}). Rows are sorted by \code{STUDYID}, \code{endpoint}, dose tier (\code{ARMCD}), then \code{USUBJID}. When \code{TRUE}, the full wide per-subject data frame from compile data and BW: \code{USUBJID}, \code{STUDYID}, \code{BWSTRESN}, \code{BWSTRESN_Init}, \code{ARMCD}, \code{SETCD}, \code{SEX}, \code{finalbodyweight}, and \code{BWZSCORE}. Rows are sorted by \code{STUDYID}, dose tier (\code{ARMCD}), then \code{USUBJID}.
 #'
 #' @examples
 #' \dontrun{
@@ -381,11 +381,19 @@ get_bw_score <- function(studyid = NULL,
         BWZSCORE = (finalbodyweight - mean_vehicle) / sd_vehicle
       ) %>%
       dplyr::select(-mean_vehicle, -sd_vehicle)  # Optionally remove the mean_vehicle and sd_vehicle columns
+
+    bwzscore_BW <- bwzscore_BW %>%
+      dplyr::mutate(.armcd_ord = armcd_sort_key(.data$ARMCD)) %>%
+      dplyr::arrange(.data$STUDYID, .data$.armcd_ord, .data$USUBJID) %>%
+      dplyr::select(-.data$.armcd_ord)
     
     # Per-subject-per-endpoint long format (all subjects, all arms)
     bw_per_subject_endpoint <- bwzscore_BW %>%
       dplyr::mutate(endpoint = "BW", score = BWZSCORE) %>%
-      dplyr::select(STUDYID, USUBJID, endpoint, score, SEX)
+      dplyr::select(STUDYID, USUBJID, ARMCD, endpoint, score, SEX) %>%
+      dplyr::mutate(.armcd_ord = armcd_sort_key(.data$ARMCD)) %>%
+      dplyr::arrange(.data$STUDYID, .data$endpoint, .data$.armcd_ord, .data$USUBJID) %>%
+      dplyr::select(-.data$.armcd_ord)
     
     # Return based on score_in_list_format
     if (score_in_list_format) {

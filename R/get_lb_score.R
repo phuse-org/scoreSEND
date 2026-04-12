@@ -8,7 +8,7 @@
 #' @param master_CompileData optional; precomputed compile data
 #' @param score_in_list_format optional; if \code{FALSE} (default), returns a long-format data frame with one score per subject per endpoint; if \code{TRUE}, returns a per-subject wide data frame (one row per subject, one column per test z-score), similar to \code{get_bw_score}.
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/lb.xpt, etc.).
-#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{endpoint}, \code{score}, and \code{SEX} (one row per subject per liver test, e.g. SERUM | ALT). When \code{TRUE}, a per-subject wide data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{alt_zscore}, \code{ast_zscore}, \code{alp_zscore}, \code{ggt_zscore}, \code{bili_zscore}, \code{alb_zscore}.
+#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{endpoint}, \code{score}, and \code{SEX} (one row per subject per liver test, e.g. SERUM | ALT). Rows are sorted by \code{STUDYID}, \code{endpoint}, dose tier (\code{ARMCD}), then \code{USUBJID}. When \code{TRUE}, a per-subject wide data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{alt_zscore}, \code{ast_zscore}, \code{alp_zscore}, \code{ggt_zscore}, \code{bili_zscore}, \code{alb_zscore}. Rows are sorted by \code{STUDYID}, dose tier (\code{ARMCD}), then \code{USUBJID}.
 #'
 #' @examples
 #' \dontrun{
@@ -371,7 +371,10 @@ lb_per_subject_endpoint <- dplyr::bind_rows(
   zscore_serum_ggt %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = ggt_zscore, SEX),
   zscore_serum_bili %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = bili_zscore, SEX),
   zscore_serum_alb %>% dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, endpoint = LBTESTCD, score = alb_zscore, SEX)
-)
+) %>%
+  dplyr::mutate(.armcd_ord = armcd_sort_key(.data$ARMCD)) %>%
+  dplyr::arrange(.data$STUDYID, .data$endpoint, .data$.armcd_ord, .data$USUBJID) %>%
+  dplyr::select(-.data$.armcd_ord)
 
 # Per-subject wide format (one row per subject, one column per test z-score; for score_in_list_format == TRUE)
 all_usubjids_lb <- unique(c(
@@ -405,7 +408,10 @@ lb_wide_per_subject <- master_CompileData %>%
   dplyr::left_join(
     zscore_serum_alb %>% dplyr::group_by(STUDYID, USUBJID) %>% dplyr::slice(1L) %>% dplyr::ungroup() %>% dplyr::select(STUDYID, USUBJID, alb_zscore),
     by = c("STUDYID", "USUBJID")
-  )
+  ) %>%
+  dplyr::mutate(.armcd_ord = armcd_sort_key(.data$ARMCD)) %>%
+  dplyr::arrange(.data$STUDYID, .data$.armcd_ord, .data$USUBJID) %>%
+  dplyr::select(-.data$.armcd_ord)
 
 # Return based on score_in_list_format
 if (score_in_list_format) {

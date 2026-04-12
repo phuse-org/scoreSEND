@@ -60,3 +60,14 @@ test_that("add_dose_ranking_column assigns tiers from TXVAL", {
   out2 <- scoreSEND:::add_dose_ranking_column(d2)
   expect_equal(out2$DOSE_RANKING, c("vehicle", "HD", NA))
 })
+
+test_that("armcd_sort_key orders dose tiers for sorting", {
+  ask <- scoreSEND:::armcd_sort_key
+  labs <- c("vehicle", "Both", "LD", "MD", "MD1", "MD2", "HD")
+  keys <- ask(labs)
+  expect_true(all(diff(keys[1:7]) > 0))
+  expect_equal(ask(NA_character_), Inf)
+  expect_equal(ask(c("vehicle", "HD")), c(1, 1000))
+  expect_true(ask("MD") < ask("MD1"))
+  expect_true(ask("MD1") < ask("MD2"))
+})
