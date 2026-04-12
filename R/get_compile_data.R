@@ -199,7 +199,7 @@ get_compile_data <- function(studyid = NULL, path_db = NULL, fake_study = FALSE,
 
 
 
-    # Dose ranking labels all arms (vehicle, HD, Intermediate, Both) for cleaned_CompileData
+    # Dose ranking labels all arms (vehicle, LD, MD, MD#, HD, Both) for cleaned_CompileData
 
     # tx table  filter by TXPARMCD
   cleaned_CompileData_filtered_tx <- tx %>%
@@ -233,21 +233,8 @@ get_compile_data <- function(studyid = NULL, path_db = NULL, fake_study = FALSE,
       dplyr::summarise(TXVAL = min(TXVAL, na.rm = TRUE), .groups = "drop")
     dose_ranking$TXVAL[is.infinite(dose_ranking$TXVAL)] <- NA_real_
 
-    # Assign vehicle / HD / Intermediate / Both from study-level min/max TXVAL
-    DOSE_RANKED_selected_rows <- dose_ranking %>%
-      dplyr::group_by(STUDYID) %>%
-      dplyr::mutate(
-        MinTXVAL = min(TXVAL),
-        MaxTXVAL = max(TXVAL),
-        DOSE_RANKING = dplyr::case_when(
-          TXVAL == MinTXVAL & TXVAL == MaxTXVAL ~ "Both",
-          TXVAL == MinTXVAL ~ "vehicle",
-          TXVAL == MaxTXVAL ~ "HD",
-          TRUE ~ "Intermediate"
-        )
-      ) %>%
-      dplyr::select(-MinTXVAL, -MaxTXVAL) %>%
-      dplyr::ungroup()
+    # Assign vehicle / LD / MD / MD# / HD / Both from ordered distinct TXVAL
+    DOSE_RANKED_selected_rows <- add_dose_ranking_column(dose_ranking)
 
     #Merging "DOSE_RANKED_selected_rows" and "cleaned_CompileData" data framed
     dose_rank_comp_data <- dplyr::inner_join(cleaned_CompileData,

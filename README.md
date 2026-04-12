@@ -75,7 +75,7 @@ The package provides three main scoring functions: **get_bw_score** (body weight
 
 ### What get_compile_data returns
 
-A data frame with one row per subject and columns **STUDYID**, **USUBJID**, **Species**, **SEX**, **ARMCD**, **SETCD**. Recovery and (when applicable) TK animals are excluded. All treatment arms are included (vehicle, HD, and any intermediate arms). Each subject has a single ARMCD label used by the score functions.
+A data frame with one row per subject and columns **STUDYID**, **USUBJID**, **Species**, **SEX**, **ARMCD**, **SETCD**. Recovery and (when applicable) TK animals are excluded. All treatment arms are included; **ARMCD** is derived from ordered TRTDOS dose (vehicle, LD, MD or MD1/MD2/…, HD, or Both). Each subject has a single ARMCD label used by the score functions.
 
 ### How get_compile_data works
 
@@ -92,8 +92,8 @@ A data frame with one row per subject and columns **STUDYID**, **USUBJID**, **Sp
   1. **Build CompileData** from DM (STUDYID, Species, USUBJID, SEX, ARMCD, SETCD).
   2. **Remove recovery animals**: Keep only subjects whose USUBJID appears in DS with DSDECOD in TERMINAL SACRIFICE, MORIBUND SACRIFICE, REMOVED FROM STUDY ALIVE, or NON-MORIBUND SACRIFICE.
   3. **Remove TK animals** (rat studies only): Exclude USUBJIDs that appear in pooldef for pools listed in PP (TK pools).
-  4. **Dose ranking**: Use TX (TXPARMCD == "TRTDOS") to get one dose value per (STUDYID, SETCD). Per study, compute min and max dose; assign **ARMCD** = "vehicle" (min dose), "HD" (max dose), "Both" (single arm), or "Intermediate" (all other arms). Inner-join this to the cleaned subject list so every remaining subject gets exactly one ARMCD.
-- **Output**: One row per subject (all arms: vehicle, HD, Intermediate, Both); columns STUDYID, USUBJID, Species, SEX, ARMCD, SETCD.
+  4. **Dose ranking**: Use TX (TXPARMCD == "TRTDOS") to get one dose value per (STUDYID, SETCD). Per study, sort distinct dose values and assign **ARMCD** = "vehicle" (lowest), "HD" (highest), "Both" (single distinct level), "LD" / "MD" / "MD1" / "MD2" / … for intermediate levels (see package implementation). Inner-join this to the cleaned subject list so every remaining subject gets exactly one ARMCD.
+- **Output**: One row per subject (all arms); columns STUDYID, USUBJID, Species, SEX, ARMCD, SETCD.
 
 **Arguments**: `studyid` and `path_db` are required when using SQLite; omit them when using `xpt_dir`. `xpt_dir` is the path to a directory containing XPT files for one study (e.g. dm.xpt, ds.xpt). `fake_study`: if TRUE, use the simplified DM+TS path and keep all arms; if FALSE, use the full path with DS/TX/PP/pooldef and dose ranking.
 

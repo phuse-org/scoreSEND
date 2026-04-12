@@ -14,10 +14,15 @@ get_doses(studyid = NULL, path_db = NULL, xpt_dir = NULL)
 \item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: xpt_dir/bw.xpt, dm.xpt, etc.).}
 }
 \value{
-dataframe
+Data frame with columns including \code{STUDYID}, \code{USUBJID}, \code{Species},
+\code{SEX}, \code{ARMCD} (dose tier), and \code{SETCD}.
 }
 \description{
-filter out tk and recovery animal
+Returns one row per subject after DS/TK cleaning. The \code{ARMCD}
+column encodes dose tier from TRTDOS: \code{vehicle} (lowest), \code{HD}
+(highest), \code{LD}, plain \code{MD} when there are four distinct dose levels,
+\code{MD1}, \code{MD2}, \ldots{} when there are five or more, and \code{Both}
+when there is a single distinct dose level.
 }
 \examples{
 \dontrun{

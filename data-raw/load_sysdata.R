@@ -72,7 +72,8 @@ organTESTCDlist <- list('LIVER' = c('SERUM | ALT',
                                            'SERUM | TSTFWTST',
                                            'SERUM | TST4OH',
                                            'SERUM | ESTROGEN'))
-doseRanks <- c('Vehicle', 'LD', 'MD', 'HD')
+# Example ordered labels; studies with more than four dose tiers use MD1, MD2, ... as needed
+doseRanks <- c('Vehicle', 'LD', 'MD', 'MD1', 'MD2', 'HD')
 
 
 
