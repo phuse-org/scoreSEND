@@ -8,7 +8,7 @@
 #' @param master_CompileData optional; precomputed compile data
 #' @param score_in_list_format optional; if \code{FALSE} (default), returns a long-format data frame with one score per subject per endpoint; if \code{TRUE}, returns a per-subject wide data frame (one row per subject, one column per finding score), similar to \code{get_bw_score}.
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/mi.xpt, etc.).
-#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{endpoint}, \code{score} (one row per subject per microscopical finding). When \code{TRUE}, a per-subject wide data frame with columns 1--6 (e.g. \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SEX}) plus one column per MISTRESC with severity score.
+#' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{SEX}, \code{endpoint}, and \code{score} (one row per subject per microscopical finding). Rows are sorted by \code{STUDYID}, \code{endpoint}, dose tier (\code{ARMCD}), then \code{USUBJID}, as in \code{get_lb_score} long output. When \code{TRUE}, a per-subject wide data frame with columns 1--6 (e.g. \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SEX}) plus one column per MISTRESC with severity score and \code{highest_score}. Rows are sorted by \code{STUDYID}, dose tier (\code{ARMCD}), then \code{USUBJID}, as in \code{get_bw_score} / \code{get_lb_score} wide output.
 #'
 #' @examples
 #' \dontrun{
@@ -200,6 +200,7 @@ get_mi_score <- function(studyid = NULL,
     # Here Check the number of columns in mi_CompileData
     mi_per_subject_endpoint <- data.frame(
       STUDYID = character(0), USUBJID = character(0),
+      ARMCD = character(0), SETCD = character(0), SEX = character(0),
       endpoint = character(0), score = numeric(0),
       stringsAsFactors = FALSE
     )
@@ -375,7 +376,10 @@ get_mi_score <- function(studyid = NULL,
           names_to = "endpoint",
           values_to = "score"
         ) %>%
-        dplyr::select(STUDYID, USUBJID, endpoint, score)
+        dplyr::select(STUDYID, USUBJID, ARMCD, SETCD, SEX, endpoint, score) %>%
+        dplyr::mutate(.armcd_ord = armcd_sort_key(.data$ARMCD)) %>%
+        dplyr::arrange(.data$STUDYID, .data$endpoint, .data$.armcd_ord, .data$USUBJID) %>%
+        dplyr::select(-.data$.armcd_ord)
       # highest_score for study-level MI: use full ScoredData (all subjects)
       if (num_cols == 7) {
         ScoredData_for_long$highest_score <- ScoredData_for_long[, 7]
@@ -384,7 +388,10 @@ get_mi_score <- function(studyid = NULL,
           as.matrix(ScoredData_for_long[, 7:num_cols]), na.rm = TRUE
         )
       }
-      mi_wide_per_subject <- ScoredData_for_long
+      mi_wide_per_subject <- ScoredData_for_long %>%
+        dplyr::mutate(.armcd_ord = armcd_sort_key(.data$ARMCD)) %>%
+        dplyr::arrange(.data$STUDYID, .data$.armcd_ord, .data$USUBJID) %>%
+        dplyr::select(-.data$.armcd_ord)
 
       # subset the ScoredData
       ScoredData_subset_HD <- ScoredData %>% dplyr::filter (ARMCD == "HD")
