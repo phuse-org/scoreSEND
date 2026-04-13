@@ -32,6 +32,6 @@ MIscoresList <- get_mi_score(xpt_dir = study_dir,
                          master_CompileData = Compiled_Data,
                          score_in_list_format = T)
 
-# Scores <- get_all_score(xpt_dir = study_dir, domain = c('lb', 'bw', 'mi'))
+Scores <- get_all_score(xpt_dir = study_dir, domain = c('lb', 'bw', 'mi'))
 
 

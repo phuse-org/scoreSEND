@@ -462,8 +462,6 @@ get_mi_score <- function(studyid = NULL,
       # Append elements from mean_col_7th_to_end to 
       mi_score_final_list <- append(empty_mi_score_list, mean_col_7th_to_end)
       
-      print(mi_score_final_list)
-      
       # Convert the list to data frame 
       mi_score_final_list_df <- dplyr::bind_rows(mi_score_final_list, .id = "iteration")
       
