@@ -1,3 +1,10 @@
+# Make sure handles interim sacrifices and recovery sacrifices properly and ensure documentation reflects this logic
+# Double check BW Scoring
+# add argument to calculate scores within SEX
+# add argument to filter by organ system (or not)
+# add argument to calculate LB as change from baseline (if baseline data is present) -- perhaps make this the default
+
+
 rm(list = ls())
 
 setwd(dirname(this.path::this.path()))
@@ -6,8 +13,8 @@ devtools::load_all()
 
 study_dir <- "sample_data/35449"
 
-# Doses <- get_doses(xpt_dir = study_dir)
-# treatmentGroups <- get_treatment_group(xpt_dir = study_dir)
+Doses <- get_doses(xpt_dir = study_dir)
+treatmentGroups <- get_treatment_group(xpt_dir = study_dir)
 
 Compiled_Data <- get_compile_data(xpt_dir = study_dir)
 
