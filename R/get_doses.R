@@ -1,5 +1,5 @@
-#' @title filter out tk and recovery animal
-#' @description Returns one row per subject after DS/TK cleaning. The \code{ARMCD}
+#' @title Subject-level dose tiers after TK and optional terminal SETCD filtering
+#' @description Returns one row per subject after TK cleaning (and optional terminal \code{SETCD} filter). The \code{ARMCD}
 #'   column encodes dose tier from TRTDOS: \code{vehicle} (lowest), \code{HD}
 #'   (highest), \code{LD}, plain \code{MD} when there are four distinct dose levels,
 #'   \code{MD1}, \code{MD2}, \ldots{} when there are five or more, and \code{Both}
@@ -7,6 +7,7 @@
 #' @param studyid Optional when \code{xpt_dir} is set; required for SQLite. Study identifier.
 #' @param path_db Optional when \code{xpt_dir} is set; path of SQLite database.
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/bw.xpt, dm.xpt, etc.).
+#' @param terminal_setcds_only If \code{TRUE} (default), after TK cleaning, keep only subjects whose \code{SETCD} is in \code{treatment_group} from \code{\link{get_treatment_group}}. If \code{FALSE}, all non-TK DM subjects (no SETCD filter). Same as \code{\link{get_compile_data}}.
 #' @return Data frame with columns including \code{STUDYID}, \code{USUBJID}, \code{Species},
 #'   \code{SEX}, \code{ARMCD} (dose tier), and \code{SETCD}.
 #'
@@ -17,11 +18,12 @@
 #' }
 #' @export
 
-get_doses <- function(studyid = NULL, path_db = NULL, xpt_dir = NULL) {
-  if (!is.null(xpt_dir)) {
+get_doses <- function(studyid = NULL, path_db = NULL, xpt_dir = NULL,
+                        terminal_setcds_only = TRUE) {
+  use_xpt <- !is.null(xpt_dir)
+  if (use_xpt) {
     bw <- read_domain_for_study("bw", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
     dm <- read_domain_for_study("dm", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
-    ds <- read_domain_for_study("ds", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
     ts <- read_domain_for_study("ts", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
     tx <- read_domain_for_study("tx", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
     pooldef <- read_domain_for_study("pooldef", studyid = NULL, path_db = path_db, xpt_dir = xpt_dir)
@@ -39,7 +41,6 @@ get_doses <- function(studyid = NULL, path_db = NULL, xpt_dir = NULL) {
     }
     bw <- con_db("bw")
     dm <- con_db("dm")
-    ds <- con_db("ds")
     ts <- con_db("ts")
     tx <- con_db("tx")
     pooldef <- con_db("pooldef")
@@ -47,10 +48,6 @@ get_doses <- function(studyid = NULL, path_db = NULL, xpt_dir = NULL) {
   }
 
 
-# # Combine into list of assigned name
-  studyData <- list('bw' = bw, 'dm' = dm, 'ds' = ds,
-                    'pooldef' = pooldef,
-                    'ts' = ts,  'tx' = tx, 'pp' = pp)
     #..Creation of compilation data...(Compilation of DM Data).........
     # Step-1 :: # CompileData is basically the compilation of DM data
     CompileData <- data.frame(STUDYID = NA, Species = NA,
@@ -93,31 +90,7 @@ get_doses <- function(studyid = NULL, path_db = NULL, xpt_dir = NULL) {
     CompileData_copy <- data.frame(CompileData)
 
 
-    # Step-2 :: # REMOVE THE RECOVERY ANIMALS from "CompileData"...<>"Recovery
-  #  animals" cleaning.. using "DS domain"
-    ## cat("Displaying unique values in ds$DSDECOD before filtering :\n")
-    ## print(unique(ds$DSDECOD))
-
-    # filter for specific "DSDECOD" values...( Keep the mentioned four ) ...
-    filtered_ds <- ds %>%
-      dplyr::filter(DSDECOD %in% c('TERMINAL SACRIFICE',
-                                   'MORIBUND SACRIFICE',
-                                   'REMOVED FROM STUDY ALIVE',
-                                   'NON-MORIBUND SACRIFICE'))
-    # check the unique value in "DSDECOD" column
-    ## cat("Displaying unique values in ds$DSDECOD after filtering:\n")
-    ## print(unique(filtered_ds$DSDECOD))
-
-    #Filter "CompileData" to keep rows where USUBJID is in "filtered_ds"~~
-
-    # Filter "CompileData" to keep rows where USUBJID is in "filtered_ds"
-  # meaning removing recovery animals
-    recovery_cleaned_CompileData <- CompileData %>%
-      dplyr::filter(USUBJID %in% filtered_ds$USUBJID)
-
-
-    # Step-3 :: # REMOVE THE TK ANIMALS IF SPECIES IS RAT from the
-   # "recovery_cleaned_CompileData"
+    # Step-2 :: # REMOVE THE TK ANIMALS IF SPECIES IS RAT from "CompileData"
     # Initialize an empty data frame to store the results
     tK_animals_df <- data.frame(PP_PoolID = character(), STUDYID = character(),
                                 USUBJID = character(), POOLID = character(),
@@ -175,11 +148,24 @@ get_doses <- function(studyid = NULL, path_db = NULL, xpt_dir = NULL) {
     }
 
 
-    # Subtract "TK_animals_df" data from the "recovery_cleaned_CompileData"
- cleaned_CompileData <- recovery_cleaned_CompileData[
-   !(recovery_cleaned_CompileData$USUBJID %in% tK_animals_df$USUBJID),]
+    # Subtract "TK_animals_df" data from "CompileData"
+ cleaned_CompileData <- CompileData[
+   !(CompileData$USUBJID %in% tK_animals_df$USUBJID),]
 
-
+    # Step-3 (optional): terminal-sacrifice SETCDs via get_treatment_group
+    if (isTRUE(terminal_setcds_only)) {
+      study_key <- if (use_xpt) basename(xpt_dir) else studyid
+      tg <- get_treatment_group(studies = studyid, db_path = path_db, xpt_dir = xpt_dir)
+      terminal_setcds <- tg[[study_key]][["treatment_group"]]
+      if (is.null(terminal_setcds)) terminal_setcds <- character(0)
+      terminal_setcds <- as.character(terminal_setcds)
+      if (length(terminal_setcds) == 0L) {
+        warning("get_doses: treatment_group is empty; no subjects retained when terminal_setcds_only = TRUE.",
+                call. = FALSE)
+      }
+      cleaned_CompileData <- cleaned_CompileData %>%
+        dplyr::filter(as.character(SETCD) %in% terminal_setcds)
+    }
 
     # tx table  filter by TXPARMCD
   cleaned_CompileData_filtered_tx <- tx %>%

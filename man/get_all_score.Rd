@@ -10,7 +10,8 @@ get_all_score(
   domain = c("lb", "mi", "bw"),
   fake_study = FALSE,
   score_in_list_format = FALSE,
-  xpt_dir = NULL
+  xpt_dir = NULL,
+  terminal_setcds_only = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ get_all_score(
 \item{score_in_list_format}{optional; if \code{FALSE} (default), each domain result is long format (same as \code{get_lb_score} / \code{get_mi_score} / \code{get_bw_score}); if \code{TRUE}, wide format per domain. Passed through to each scorer.}
 
 \item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: xpt_dir/bw.xpt, dm.xpt, etc.).}
+
+\item{terminal_setcds_only}{Passed to each score function for \code{\link{get_compile_data}}; default \code{TRUE}.}
 }
 \value{
 List with \code{studyid_res} and one element per requested \code{domain} (\code{lb}, \code{mi}, \code{bw}): each is long or wide according to \code{score_in_list_format}.

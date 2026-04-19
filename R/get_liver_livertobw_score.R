@@ -5,7 +5,8 @@ get_liver_livertobw_score <- function(studyid = NULL,
                                        master_CompileData = NULL,
                                        bwzscore_BW = NULL,
                                        score_in_list_format = FALSE,
-                                       xpt_dir = NULL) {
+                                       xpt_dir = NULL,
+                                       terminal_setcds_only = TRUE) {
   use_xpt <- !is.null(xpt_dir)
   if (!use_xpt) {
     if (is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
@@ -22,7 +23,7 @@ get_liver_livertobw_score <- function(studyid = NULL,
   if (is.null(bwzscore_BW)) {
     bwzscore_BW <- get_bw_score(studyid = studyid, path_db = path_db, fake_study = FALSE,
                                 master_CompileData = NULL, score_in_list_format = TRUE,
-                                xpt_dir = xpt_dir)
+                                xpt_dir = xpt_dir, terminal_setcds_only = terminal_setcds_only)
   }
 
   if (use_xpt) {
@@ -69,7 +70,8 @@ get_liver_livertobw_score <- function(studyid = NULL,
   #browser()
   # Check if master_CompileData is NULL
   if (is.null(master_CompileData)) {
-    master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir)
+    master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir,
+                                           terminal_setcds_only = terminal_setcds_only)
   } 
   
   OrganWeights_Liver_filtered <- OrganWeights_Liver_Weight_Selected_Col %>%

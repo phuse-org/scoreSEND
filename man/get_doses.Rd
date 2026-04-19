@@ -2,9 +2,14 @@
 % Please edit documentation in R/get_doses.R
 \name{get_doses}
 \alias{get_doses}
-\title{filter out tk and recovery animal}
+\title{Subject-level dose tiers after TK and optional terminal SETCD filtering}
 \usage{
-get_doses(studyid = NULL, path_db = NULL, xpt_dir = NULL)
+get_doses(
+  studyid = NULL,
+  path_db = NULL,
+  xpt_dir = NULL,
+  terminal_setcds_only = TRUE
+)
 }
 \arguments{
 \item{studyid}{Optional when \code{xpt_dir} is set; required for SQLite. Study identifier.}
@@ -12,13 +17,15 @@ get_doses(studyid = NULL, path_db = NULL, xpt_dir = NULL)
 \item{path_db}{Optional when \code{xpt_dir} is set; path of SQLite database.}
 
 \item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: xpt_dir/bw.xpt, dm.xpt, etc.).}
+
+\item{terminal_setcds_only}{If \code{TRUE} (default), after TK cleaning, keep only subjects whose \code{SETCD} is in \code{treatment_group} from \code{\link{get_treatment_group}}. If \code{FALSE}, all non-TK DM subjects (no SETCD filter). Same as \code{\link{get_compile_data}}.}
 }
 \value{
 Data frame with columns including \code{STUDYID}, \code{USUBJID}, \code{Species},
 \code{SEX}, \code{ARMCD} (dose tier), and \code{SETCD}.
 }
 \description{
-Returns one row per subject after DS/TK cleaning. The \code{ARMCD}
+Returns one row per subject after TK cleaning (and optional terminal \code{SETCD} filter). The \code{ARMCD}
 column encodes dose tier from TRTDOS: \code{vehicle} (lowest), \code{HD}
 (highest), \code{LD}, plain \code{MD} when there are four distinct dose levels,
 \code{MD1}, \code{MD2}, \ldots{} when there are five or more, and \code{Both}

@@ -8,6 +8,7 @@
 #' @param master_CompileData optional; precomputed compile data
 #' @param score_in_list_format optional; if \code{FALSE} (default), returns a long-format data frame with one score per subject per endpoint; if \code{TRUE}, returns a per-subject wide data frame (one row per subject, one column per finding score), similar to \code{get_bw_score}.
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/mi.xpt, etc.).
+#' @param terminal_setcds_only Passed to \code{\link{get_compile_data}} when compile data is built; default \code{TRUE}.
 #' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{SEX}, \code{endpoint}, and \code{score} (one row per subject per microscopical finding). Rows are sorted by \code{STUDYID}, \code{endpoint}, dose tier (\code{ARMCD}), then \code{USUBJID}, as in \code{get_lb_score} long output. When \code{TRUE}, a per-subject wide data frame with columns 1--6 (e.g. \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SEX}) plus one column per MISTRESC with severity score and \code{highest_score}. Rows are sorted by \code{STUDYID}, dose tier (\code{ARMCD}), then \code{USUBJID}, as in \code{get_bw_score} / \code{get_lb_score} wide output.
 #'
 #' @examples
@@ -22,7 +23,8 @@ get_mi_score <- function(studyid = NULL,
                          fake_study = FALSE,
                          master_CompileData = NULL,
                          score_in_list_format = FALSE,
-                         xpt_dir = NULL) {
+                         xpt_dir = NULL,
+                         terminal_setcds_only = TRUE) {
   use_xpt <- !is.null(xpt_dir)
   if (!use_xpt) {
     if (is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
@@ -123,7 +125,8 @@ get_mi_score <- function(studyid = NULL,
     if (is.null(master_CompileData)) {
       fake_study = fake_study
       # Call the master_CompileData function to generate the data frame
-      master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir)  
+      master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir,
+                                           terminal_setcds_only = terminal_setcds_only)
     } 
     
     

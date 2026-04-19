@@ -8,6 +8,7 @@
 #' @param master_CompileData optional; precomputed compile data
 #' @param score_in_list_format optional; if \code{FALSE} (default), returns a long-format data frame with one score per subject per endpoint; if \code{TRUE}, returns a per-subject wide data frame (one row per subject, one column per test z-score), similar to \code{get_bw_score}.
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/lb.xpt, etc.).
+#' @param terminal_setcds_only Passed to \code{\link{get_compile_data}} when compile data is built; default \code{TRUE}.
 #' @return When \code{score_in_list_format} is \code{FALSE}, a data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{endpoint}, \code{score}, and \code{SEX} (one row per subject per liver test, e.g. SERUM | ALT). Rows are sorted by \code{STUDYID}, \code{endpoint}, dose tier (\code{ARMCD}), then \code{USUBJID}. When \code{TRUE}, a per-subject wide data frame with columns \code{STUDYID}, \code{USUBJID}, \code{ARMCD}, \code{SETCD}, \code{alt_zscore}, \code{ast_zscore}, \code{alp_zscore}, \code{ggt_zscore}, \code{bili_zscore}, \code{alb_zscore}. Rows are sorted by \code{STUDYID}, dose tier (\code{ARMCD}), then \code{USUBJID}.
 #'
 #' @examples
@@ -22,7 +23,8 @@ get_lb_score <- function(studyid = NULL,
                          fake_study = FALSE,
                          master_CompileData = NULL,
                          score_in_list_format = FALSE,
-                         xpt_dir = NULL) {
+                         xpt_dir = NULL,
+                         terminal_setcds_only = TRUE) {
   use_xpt <- !is.null(xpt_dir)
   if (!use_xpt) {
     if (is.null(path_db)) stop("path_db is required when xpt_dir is not set.")
@@ -120,7 +122,8 @@ get_lb_score <- function(studyid = NULL,
     if (is.null(master_CompileData)) {
       fake_study = fake_study
       # Call the master_CompileData function to generate the data frame
-      master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir)  
+      master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir,
+                                           terminal_setcds_only = terminal_setcds_only)
     } 
     
     # Remove the TK animals and Recovery animals
