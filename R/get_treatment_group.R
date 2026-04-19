@@ -1,4 +1,4 @@
-## This code is for getting treatment group, recovery group and TK group
+## This code is for getting treatment, recovery, interim groups and TK group
 
 ## -----------------------------------------------------------------------------
 ##   Date                     Programmer
@@ -10,7 +10,17 @@
 #' @param studies Optional; for SQLite: character or vector of study IDs, or NULL to use ID table. Ignored when \code{xpt_dir} is set.
 #' @param db_path Optional when \code{xpt_dir} is set; path to SQLite database
 #' @param xpt_dir Optional; path to a directory containing XPT files for one study (flat: xpt_dir/tx.xpt, dm.xpt, etc.). Processed as a single study.
-#' @return list
+#' @return A list with one entry per study. Each study entry includes \code{species},
+#'   \code{setcd}, and (when species is present) \code{treatment_group},
+#'   \code{recovery_group}, \code{interim_group}, and for rats optionally
+#'   \code{TK_group}. \code{treatment_group}, \code{recovery_group}, and
+#'   \code{interim_group} are character vectors of \code{SETCD} values for
+#'   non-TK sets classified by disposition: any animal with \code{RECOVERY SACRIFICE},
+#'   \code{INTERIM SACRIFICE}, or \code{TERMINAL SACRIFICE} in \code{DS$DSDECOD},
+#'   respectively. If a set has multiple disposition types across animals, the
+#'   first matching branch applies: recovery, then interim, then terminal.
+#'   The list also contains \code{four_trtm_group}, studies with exactly four
+#'   terminal treatment groups.
 #'
 #' @examples
 #' \dontrun{
@@ -82,6 +92,7 @@ get_treatment_group <- function(studies = NULL, db_path = NULL, xpt_dir = NULL) 
     list_return[[study]][['setcd']] <- number_of_setcd
     recv_group <- c()
     trtm_group <- c()
+    intrm_group <- c()
 if(length(st_species)!= 0) {
     if(st_species =="RAT") {
       # see if tkdesc in txparmcd
@@ -146,6 +157,8 @@ if(length(st_species)!= 0) {
           dsdecod <- tolower(unique(ds[ds$USUBJID %in% subjid, "DSDECOD"]))
           if(tolower("RECOVERY SACRIFICE") %in% dsdecod) {
             recv_group <- c(recv_group, set_cd)
+          } else if (tolower("INTERIM SACRIFICE") %in% dsdecod) {
+            intrm_group <- c(intrm_group, set_cd)
           } else if (tolower("TERMINAL SACRIFICE") %in% dsdecod){
             trtm_group <- c(trtm_group, set_cd)
           }
@@ -162,6 +175,8 @@ if(length(st_species)!= 0) {
         if(tolower("RECOVERY SACRIFICE") %in% dsdecod) {
           ## print(paste0(set_cd, ' : in recovery'))
           recv_group <- c(recv_group, set_cd)
+        } else if (tolower("INTERIM SACRIFICE") %in% dsdecod) {
+          intrm_group <- c(intrm_group, set_cd)
         } else if (tolower("TERMINAL SACRIFICE") %in% dsdecod){
           trtm_group <- c(trtm_group, set_cd)
         }
@@ -178,6 +193,7 @@ if(length(st_species)!= 0) {
     print(trtm_group)
     list_return[[study]][['treatment_group']] <- trtm_group
     list_return[[study]][['recovery_group']] <- recv_group
+    list_return[[study]][['interim_group']] <- intrm_group
   }
 
 list_return[['four_trtm_group']] <- four

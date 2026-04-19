@@ -64,6 +64,25 @@ get_treatment_group(xpt_dir = study_dir)
 To list multiple study directories under a parent folder, use `get_study_ids_from_xpt(parent_dir)`; it returns a data frame with a `study_dir` column (full path to each subdirectory). You can then loop over those paths and call the scoring functions with `xpt_dir = each_study_dir`. For details on how each score is calculated and how to use their arguments, see **Scoring functions** below.
 
 
+## get_treatment_group
+
+**get_treatment_group** classifies **SETCD** cohorts (non-TK sets) using **DS** disposition (**DSDECOD**). It does not drive compile-data filtering; use it when you need arm-level labels for reporting or inspection.
+
+For each study, the returned list includes:
+
+| Element | Meaning |
+|---------|---------|
+| `species` | Species from TS |
+| `setcd` | All SETCD values in DM |
+| `treatment_group` | SETCDs where any subject has **TERMINAL SACRIFICE** (non-TK sets only) |
+| `recovery_group` | SETCDs where any subject has **RECOVERY SACRIFICE** |
+| `interim_group` | SETCDs where any subject has **INTERIM SACRIFICE** |
+| `TK_group` | (Rats only, when TK can be inferred) SETCDs classified as toxicokinetic |
+| `four_trtm_group` | (Top-level list entry) Study IDs with exactly four terminal treatment groups |
+
+If a set has more than one disposition type across animals, classification follows a single branch: **recovery** first, then **interim**, then **terminal**.
+
+
 # Scoring functions
 
 The package provides three main scoring functions: **get_bw_score** (body weight), **get_lb_score** (laboratory / clinical chemistry), and **get_mi_score** (microscopic findings). All three use the same data-source options (SQLite or XPT directory), can accept precomputed compile data via `master_CompileData`, and control return shape with `score_in_list_format` (long vs wide).

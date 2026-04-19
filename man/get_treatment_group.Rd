@@ -14,7 +14,17 @@ get_treatment_group(studies = NULL, db_path = NULL, xpt_dir = NULL)
 \item{xpt_dir}{Optional; path to a directory containing XPT files for one study (flat: xpt_dir/tx.xpt, dm.xpt, etc.). Processed as a single study.}
 }
 \value{
-list
+A list with one entry per study. Each study entry includes \code{species},
+\code{setcd}, and (when species is present) \code{treatment_group},
+\code{recovery_group}, \code{interim_group}, and for rats optionally
+\code{TK_group}. \code{treatment_group}, \code{recovery_group}, and
+\code{interim_group} are character vectors of \code{SETCD} values for
+non-TK sets classified by disposition: any animal with \code{RECOVERY SACRIFICE},
+\code{INTERIM SACRIFICE}, or \code{TERMINAL SACRIFICE} in \code{DS$DSDECOD},
+respectively. If a set has multiple disposition types across animals, the
+first matching branch applies: recovery, then interim, then terminal.
+The list also contains \code{four_trtm_group}, studies with exactly four
+terminal treatment groups.
 }
 \description{
 get treatment group
