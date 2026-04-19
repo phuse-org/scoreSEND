@@ -51,7 +51,6 @@ get_treatment_group <- function(studies = NULL, db_path = NULL, xpt_dir = NULL) 
     if (use_xpt) {
       study_dir_val <- study_list$study_dir[i]
       study <- basename(study_dir_val)
-      print(study)
       tx <- read_domain_for_study("tx", studyid = NULL, path_db = NULL, xpt_dir = study_dir_val)
       ts <- read_domain_for_study("ts", studyid = NULL, path_db = NULL, xpt_dir = study_dir_val)
       ds <- read_domain_for_study("ds", studyid = NULL, path_db = NULL, xpt_dir = study_dir_val)
@@ -66,7 +65,6 @@ get_treatment_group <- function(studies = NULL, db_path = NULL, xpt_dir = NULL) 
       pooldef <- data.table::as.data.table(pooldef)
     } else {
       study <- study_list$STUDYID[i]
-      print(study)
       tx <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID,SETCD,TXPARMCD,TXVAL FROM TX WHERE STUDYID IN (:x)", params = list(x = study))
       tx <- data.table::as.data.table(tx)
       ts <- DBI::dbGetQuery(conn = con, statement = "SELECT STUDYID,TSPARMCD,TSVAL FROM TS WHERE STUDYID = (:x)", params = list(x = study))
@@ -84,7 +82,6 @@ get_treatment_group <- function(studies = NULL, db_path = NULL, xpt_dir = NULL) 
     ## tabl <- c('tx','ts','ds','dm','pc','pooldef')
 
     number_of_setcd <- unique(dm[['SETCD']])
-    print(number_of_setcd)
     st_species <- ts[ts$TSPARMCD == "SPECIES", "TSVAL"]
 
     list_return[[study]][['species']] <- st_species
@@ -110,8 +107,6 @@ if(length(st_species)!= 0) {
         if (length(unq_tkdesc) > 0) {
           if('TK' %in% unq_tkdesc) {
             tk_group <- unique(tx[tx$TXPARMCD == "TKDESC" & tx$TXVAL == "TK", "SETCD"])
-            ## print('tkin parmcd')
-            ## print(tk)
           }
           not_tk <- number_of_setcd[which(!number_of_setcd %in% tk_group)]
         } else {
@@ -135,12 +130,10 @@ if(length(st_species)!= 0) {
 
           if(pc_sub=='not_empty'){
             if(any(subjid %in% uniq_pc_subj)){
-              ## print(paste0(set_cd, ' : in TK'))
               tk_group <- c(tk_group, set_cd)
             }
           } else if (pc_sub=='empty'){
             if(any(subjid %in% pool_sub)){
-              ## print(paste0(set_cd, ' : in TK and pool'))
               tk_group <- c(tk_group, set_cd)
             }
           }
@@ -173,7 +166,6 @@ if(length(st_species)!= 0) {
         subjid <- unique(dm[dm$SETCD == set_cd, "USUBJID"])
         dsdecod <- tolower(unique(ds[ds$USUBJID %in% subjid, "DSDECOD"]))
         if(tolower("RECOVERY SACRIFICE") %in% dsdecod) {
-          ## print(paste0(set_cd, ' : in recovery'))
           recv_group <- c(recv_group, set_cd)
         } else if (tolower("INTERIM SACRIFICE") %in% dsdecod) {
           intrm_group <- c(intrm_group, set_cd)
@@ -187,10 +179,8 @@ if(length(st_species)!= 0) {
     if( length(trtm_group) == 4) {
 
       four <- c(four,study)
-      ## print(four)
     }
 
-    print(trtm_group)
     list_return[[study]][['treatment_group']] <- trtm_group
     list_return[[study]][['recovery_group']] <- recv_group
     list_return[[study]][['interim_group']] <- intrm_group

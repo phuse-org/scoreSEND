@@ -141,17 +141,9 @@ get_bw_score <- function(studyid = NULL,
     # Check for any duplicate USUBJID
     duplicates_exist <- any(duplicated(StudyInitialWeights$USUBJID))
 
-    # Output result
-    ## if (duplicates_exist) {
-    ##   ## print("There are duplicate USUBJID values in StudyInitialWeights")
-    ## } else {
-    ##   print("No duplicate USUBJID values found in StudyInitialWeights")
-    ## }
-
     #  see the duplicate values
     if (duplicates_exist) {
       duplicate_usubjids <- StudyInitialWeights$USUBJID[duplicated(StudyInitialWeights$USUBJID)]
-      ## print(duplicate_usubjids)
     }
 
     # Duplicate rows handling
@@ -220,17 +212,9 @@ get_bw_score <- function(studyid = NULL,
     # Check for any duplicate USUBJID
     stbw_duplicates_exist <- any(duplicated(StudyBodyWeights$USUBJID))
 
-    # Output result
-    ## if (stbw_duplicates_exist) {
-    ##   print("There are duplicate USUBJID values in StudyBodyWeights")
-    ## } else {
-    ##   print("No duplicate USUBJID values found in StudyBodyWeights")
-    ## }
-
     # See the duplicate values
     if (stbw_duplicates_exist) {
       stbw_duplicate_usubjids <- StudyBodyWeights$USUBJID[duplicated(StudyBodyWeights$USUBJID)]
-      ## print( stbw_duplicate_usubjids)
     }
 
     # Duplicate "StudyBodyWeights" rows handling
@@ -241,7 +225,6 @@ get_bw_score <- function(studyid = NULL,
 
     # number of unique USUBJID
     unique_StudyBodyWeights_USUBJID <- length(unique(StudyBodyWeights$USUBJID))
-    ## print(unique_StudyBodyWeights_USUBJID)
     #
 
 
@@ -362,10 +345,6 @@ get_bw_score <- function(studyid = NULL,
 
     #"Recovery animals" cleaning from "BW_df_merged_ARMCD"
     # #  master_CompileData is alreadyTK animals & Recovery animal cleaned
-
-    # all_present <- all(BW_df_merged_ARMCD$USUBJID %in% master_CompileData$USUBJID)
-    # print(all_present)
-
 
     # "BWzScore Calculation"
 

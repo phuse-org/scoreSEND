@@ -105,12 +105,8 @@ get_mi_score <- function(studyid = NULL,
     levels(MIData$MISTRESC)[levels(MIData$MISTRESC) == "INFILTRATION, MONONUCLEAR CELL"] <- "Infiltrate"
     levels(MIData$MISTRESC)[levels(MIData$MISTRESC) == "Fibrosis"] <- "Fibroplasia/Fibrosis"
 
-    # Check any empty MISRESC column
-    empty_strings_count <- sum(MIData$MISTRESC == "")
-    ## print(paste("Number of empty strings in MISTRESC:", empty_strings_count))
-
-    # remove empty
-    MIData <- MIData[MIData$MISTRESC != '', ]  # Remove rows with empty MISTRESC
+    # Remove rows with empty MISTRESC
+    MIData <- MIData[MIData$MISTRESC != '', ]
     #........................................................................................
     # Create a copy of MIData
     MIData_copy <- MIData

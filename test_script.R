@@ -12,7 +12,7 @@ setwd(dirname(this.path::this.path()))
 
 devtools::load_all()
 
-study_dir <- "sample_data/96298"
+study_dir <- "sample_data/35449"
 
 Doses <- get_doses(xpt_dir = study_dir)
 treatmentGroups <- get_treatment_group(xpt_dir = study_dir)
