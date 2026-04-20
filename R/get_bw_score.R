@@ -349,8 +349,13 @@ get_bw_score <- function(studyid = NULL,
     # "BWzScore Calculation"
 
     # Create the finalbodyweight column in merged_recovery_tk_cleaned_dose_ranked_df data frame
+    # XPT/SQLite may return BWSTRESN as character; coerce before arithmetic
     bwzscore_BW_df <- BW_df_merged_ARMCD %>%
-      dplyr::mutate(finalbodyweight = abs(BWSTRESN - BWSTRESN_Init))
+      dplyr::mutate(
+        BWSTRESN = as.numeric(BWSTRESN),
+        BWSTRESN_Init = as.numeric(BWSTRESN_Init),
+        finalbodyweight = abs(BWSTRESN - BWSTRESN_Init)
+      )
 #browser()
     # Create the BWZSCORE column
     bwzscore_BW <- bwzscore_BW_df %>%

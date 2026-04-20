@@ -123,11 +123,20 @@ get_mi_score <- function(studyid = NULL,
       # Call the master_CompileData function to generate the data frame
       master_CompileData <- get_compile_data(studyid = studyid, path_db = path_db, fake_study = fake_study, xpt_dir = xpt_dir,
                                            terminal_setcds_only = terminal_setcds_only)
-    } 
-    
-    
-     # master_CompileData <- get_compile_data(studyid = studyid,
-     #                                   path_db = path_db,fake_study = fake_study)
+    }
+
+    if (nrow(master_CompileData) == 0L) {
+      mi_per_subject_endpoint <- data.frame(
+        STUDYID = character(0), USUBJID = character(0), ARMCD = character(0),
+        SETCD = character(0), SEX = character(0), endpoint = character(0), score = numeric(0),
+        stringsAsFactors = FALSE
+      )
+      mi_wide_per_subject <- master_CompileData[, seq_len(min(6L, ncol(master_CompileData))), drop = FALSE]
+      if (score_in_list_format) {
+        return(mi_wide_per_subject)
+      }
+      return(mi_per_subject_endpoint)
+    }
 
     # Filter the data frame
     tk_recovery_less_MIData <- MIData %>% dplyr::filter (USUBJID %in% master_CompileData$USUBJID)
