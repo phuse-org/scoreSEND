@@ -12,14 +12,23 @@ setwd(dirname(this.path::this.path()))
 
 devtools::load_all()
 
+Domains <- ('bw', 'lb', 'mi')
+
 study_dirs <- list.files('sample_data', full.names = T)
 
 # study_dir <- "sample_data/35449"
-for (study_dir in study_dirs) {
+for (study_dir in study_dirs[1:3]) {
   print(study_dir)
+  
+  Files <- list.files(study_dir)
+  for (File in Files) {
+    Domain <- toupper(unlist(strsplit(File, '.', fixed = T))[1])
+    assign(Domain, haven::read_xpt(paste0(study_dir, '/', File)))
+  }
   
   Doses <- get_doses(xpt_dir = study_dir)
   treatmentGroups <- get_treatment_group(xpt_dir = study_dir)
+  print(treatmentGroups)
   
   Compiled_Data <- get_compile_data(xpt_dir = study_dir)
   
@@ -44,8 +53,10 @@ for (study_dir in study_dirs) {
                                master_CompileData = Compiled_Data,
                                score_in_list_format = T)
   
-  Scores <- get_all_score(xpt_dir = study_dir, domain = c('lb', 'bw', 'mi'), score_in_list_format = F)
-  scoresList <- get_all_score(xpt_dir = study_dir, domain = c('lb', 'bw', 'mi'), score_in_list_format = T)
+  Scores <- get_all_score(xpt_dir = study_dir, domain = Domains, score_in_list_format = F)
+  scoresList <- get_all_score(xpt_dir = study_dir, domain = Domains, score_in_list_format = T)
   
-  
+  # for () {
+  #   
+  # }
 }
