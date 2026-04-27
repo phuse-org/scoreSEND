@@ -12,7 +12,7 @@ setwd(dirname(this.path::this.path()))
 
 devtools::load_all()
 
-Domains <- ('bw', 'lb', 'mi')
+Domains <- c('bw', 'lb', 'mi')
 
 study_dirs <- list.files('sample_data', full.names = T)
 
@@ -56,7 +56,12 @@ for (study_dir in study_dirs[1:3]) {
   Scores <- get_all_score(xpt_dir = study_dir, domain = Domains, score_in_list_format = F)
   scoresList <- get_all_score(xpt_dir = study_dir, domain = Domains, score_in_list_format = T)
   
-  # for () {
-  #   
-  # }
+  if (study_dir == study_dirs[1]) {
+    Scores_all <- Scores[Domains]
+    scoresList_all <- scoresList[Domains]
+  }
+  
+  for (Domain in Domains) {
+    Scores_all[[Domain]] <- rbind(Scores_all[[Domain]], Scores[[Domain]])
+  }
 }
