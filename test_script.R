@@ -1,10 +1,10 @@
-# Make sure handles interim sacrifices and recovery sacrifices properly and ensure documentation reflects this logic
+# (X) Make sure handles interim sacrifices and recovery sacrifices properly and ensure documentation reflects this logic
 # Double check BW Scoring
 # add argument to calculate scores within SEX
 # add argument to filter by organ system (or not)
 # add argument to calculate LB as change from baseline (if baseline data is present) -- perhaps make this the default
 # Update xpt_dir functionality to enable reading from multiple datasets
-
+# Develop a python implementation of this package
 
 rm(list = ls())
 
@@ -16,10 +16,12 @@ Domains <- c('bw', 'lb', 'mi')
 
 study_dirs <- list.files('sample_data', full.names = T)
 
+# Scores_all <- list()
 # study_dir <- "sample_data/35449"
-for (study_dir in study_dirs[1:3]) {
+for (study_dir in study_dirs[1:4]) {
   print(study_dir)
   
+  # Create tibbles for each domain
   Files <- list.files(study_dir)
   for (File in Files) {
     Domain <- toupper(unlist(strsplit(File, '.', fixed = T))[1])
