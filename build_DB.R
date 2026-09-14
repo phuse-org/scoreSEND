@@ -20,6 +20,6 @@ status <- dbImportStudies(dbToken, 'sample_data/',
 
 # Create a set of indexes to increase query performance for the data extraction functions
 # - they may be created before of after import of data
-dbCreateteIndexes(dbToken)
+dbCreateIndexes(dbToken)
 
 disconnectDB(dbToken)

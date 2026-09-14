@@ -9,7 +9,7 @@
 # We will work by reading from database rather than raw XPT files
 ## Kevin will create a SQLite database (using sendigR) that we can all use
 ## Kevin will provide training an documentation for how to use sendigR to do this
-## leave raw XPT reading but it won't be maintained
+## leave raw XPT reading
 ## don't run lot's of SQL queries but rather pull domain data out into data frames
 
 rm(list = ls())
