@@ -6,6 +6,12 @@
 # Update xpt_dir functionality to enable reading from multiple datasets
 # Develop a python implementation of this package
 
+# We will work by reading from database rather than raw XPT files
+## Kevin will create a SQLite database (using sendigR) that we can all use
+## Kevin will provide training an documentation for how to use sendigR to do this
+## leave raw XPT reading but it won't be maintained
+## don't run lot's of SQL queries but rather pull domain data out into data frames
+
 rm(list = ls())
 
 setwd(dirname(this.path::this.path()))
