@@ -6,7 +6,7 @@ setwd(dirname(this.path()))
 
 # The database is created by the call of  initEnvironment with the parameter dbCreate = TRUE:
 dbToken <- initEnvironment(dbType = 'sqlite', 
-                           dbPath = 'sample_data/BioCelerate.db', 
+                           dbPath = 'sample_db/BioCelerate.db', 
                            dbCreate = FALSE)
 
 # Add Study to Database

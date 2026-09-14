@@ -1,0 +1,22 @@
+=========================================================================
+Log Path: sample_db//dbImportStudies_20260914_114343.log
+Program Path: C:/Users/ksnyder/GitHub/scoreSEND/build_DB.R
+Working Directory: C:/Users/ksnyder/GitHub/scoreSEND
+User Name: ksnyder
+R Version: 4.4.1 (2024-06-14 ucrt)
+Machine: CER-PF5BT8LX x86-64
+Operating System: Windows 10 x64 build 26100
+Base Packages: stats graphics grDevices utils datasets methods base
+Other Packages: scoreSEND_0.0.0.9000 testthat_3.2.1.1 stringr_1.6.0 logr_1.3.9
+common_1.1.5 sendigR_1.0.0 this.path_2.7.1
+Log Start Time: 2026-09-14 11:43:43.346014
+=========================================================================
+
+35449: OK
+43066: OK
+87497: OK
+96298: OK
+=========================================================================
+Log End Time: 2026-09-14 11:43:49.505866
+Log Elapsed Time: 0 00:00:06
+=========================================================================
